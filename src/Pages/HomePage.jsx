@@ -1,8 +1,12 @@
+import { UserProfile } from '@clerk/clerk-react'
 import React from 'react'
 
 const HomePage = () => {
     return (
-        <div>HomePage</div>
+        <>
+            <div className='text-3xl font-bold underline'>HomePage</div>
+            <UserProfile />
+        </>
     )
 }
 

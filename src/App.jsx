@@ -1,4 +1,3 @@
-import './App.css'
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Auth from "./Auth/Auth";
