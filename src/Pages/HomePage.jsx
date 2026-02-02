@@ -5,6 +5,24 @@ import {
   Autocomplete,
   DirectionsRenderer,
 } from "@react-google-maps/api";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/clerk-react";
+
+import {
+  Car,
+  Calendar,
+  User,
+  MapPin,
+  Wallet,
+  ShieldCheck,
+} from "lucide-react";
+
+import heroBg from "../assets/hero-bg.png"; // ✅ Vite-safe import
 
 const containerStyle = {
   width: "100%",
@@ -12,7 +30,7 @@ const containerStyle = {
 };
 
 const center = {
-  lat: 13.0827, // Chennai (default)
+  lat: 13.0827,
   lng: 80.2707,
 };
 
@@ -23,18 +41,17 @@ export default function HomePage() {
   const [directions, setDirections] = useState(null);
   const [distance, setDistance] = useState("");
   const [duration, setDuration] = useState("");
+  const [date, setDate] = useState("");
+  const [passengers, setPassengers] = useState(1);
 
   const calculateRoute = async () => {
-    if (
-      originRef.current.value === "" ||
-      destinationRef.current.value === ""
-    ) {
+    if (!originRef.current?.value || !destinationRef.current?.value || !date) {
+      alert("Please select origin, destination and date");
       return;
     }
 
-    const directionsService = new window.google.maps.DirectionsService();
-
-    const results = await directionsService.route({
+    const service = new window.google.maps.DirectionsService();
+    const results = await service.route({
       origin: originRef.current.value,
       destination: destinationRef.current.value,
       travelMode: window.google.maps.TravelMode.DRIVING,
@@ -58,45 +75,221 @@ export default function HomePage() {
       googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
       libraries={["places"]}
     >
-      <div style={{ padding: "10px" }}>
-        <h2>Google Maps Route Finder</h2>
+      <div className="min-h-screen font-[var(--font-family)] bg-[var(--color-bg)] text-[var(--color-text-primary)]">
 
-        <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-          <Autocomplete>
-            <input
-              type="text"
-              placeholder="Start Location"
-              ref={originRef}
-              style={{ width: "200px", padding: "5px" }}
-            />
-          </Autocomplete>
+        {/* ================= HEADER ================= */}
+        <header className="sticky top-0 z-50 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+          <div className="max-w-[1200px] mx-auto px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Car className="w-7 h-7 text-[var(--color-primary)]" />
+              <h2 className="text-xl font-bold">RideShare</h2>
+            </div>
 
-          <Autocomplete>
-            <input
-              type="text"
-              placeholder="Destination"
-              ref={destinationRef}
-              style={{ width: "200px", padding: "5px" }}
-            />
-          </Autocomplete>
+            <div className="flex items-center gap-4">
+              <nav className="hidden md:flex gap-6 text-sm">
+                {["Search", "Publish", "Safety", "Help"].map((item) => (
+                  <a
+                    key={item}
+                    href="#"
+                    className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition"
+                  >
+                    {item}
+                  </a>
+                ))}
+              </nav>
 
-          <button onClick={calculateRoute}>Find Route</button>
-          <button onClick={clearRoute}>Clear</button>
-        </div>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button className="px-4 py-2 rounded-md bg-[var(--color-primary)] text-white font-semibold">
+                    Log in
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="px-4 py-2 rounded-md bg-[var(--color-primary-muted)] text-[var(--color-primary)] font-semibold">
+                    Sign up
+                  </button>
+                </SignUpButton>
+              </SignedOut>
 
-        {distance && duration && (
-          <p>
-            📏 Distance: <b>{distance}</b> | ⏱ Duration: <b>{duration}</b>
-          </p>
+              <SignedIn>
+                <UserButton afterSignOutUrl="/" />
+              </SignedIn>
+            </div>
+          </div>
+        </header>
+
+        {/* ================= HERO ================= */}
+        <section className="px-6 py-12">
+          <div
+            className="max-w-[1200px] mx-auto rounded-xl overflow-hidden"
+            style={{
+              backgroundImage: `linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.6)), url(${heroBg})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <div className="min-h-[520px] flex flex-col items-center justify-center text-center px-6 gap-6">
+              <h1 className="text-white text-4xl md:text-6xl font-extrabold">
+                Your pick of rides at low prices
+              </h1>
+              <p className="text-white/90 text-lg max-w-2xl">
+                Find the perfect ride from thousands of destinations across the country.
+              </p>
+
+              {/* Search Bar */}
+              <div className="w-full max-w-6xl bg-white rounded-xl shadow-lg flex flex-col md:flex-row items-center gap-2 p-2">
+
+                <Autocomplete>
+                  <input
+                    ref={originRef}
+                    placeholder="Leaving from..."
+                    className="flex-1 px-4 py-3 outline-none text-sm"
+                  />
+                </Autocomplete>
+
+                <Autocomplete>
+                  <input
+                    ref={destinationRef}
+                    placeholder="Going to..."
+                    className="flex-1 px-4 py-3 outline-none text-sm"
+                  />
+                </Autocomplete>
+
+                <div className="flex items-center gap-2 px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+                  <Calendar className="w-4 h-4" />
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="outline-none bg-transparent cursor-pointer"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 px-4 py-3 text-sm">
+                  <User className="w-4 h-4 text-[var(--color-text-secondary)]" />
+                  <select
+                    value={passengers}
+                    onChange={(e) => setPassengers(Number(e.target.value))}
+                    className="outline-none bg-transparent cursor-pointer"
+                  >
+                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <option key={n} value={n}>
+                        {n} {n === 1 ? "passenger" : "passengers"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  onClick={calculateRoute}
+                  className="px-8 py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold"
+                >
+                  Search
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================= ROUTE INFO ================= */}
+        {distance && (
+          <section className="py-6 text-center">
+            <p className="text-lg">
+              📏 <b>{distance}</b> &nbsp; ⏱ <b>{duration}</b>
+            </p>
+            <button
+              onClick={clearRoute}
+              className="mt-4 px-6 py-2 rounded-md bg-[var(--color-primary-muted)] text-[var(--color-primary)] font-semibold"
+            >
+              Clear Route
+            </button>
+          </section>
         )}
 
-        <GoogleMap
-          mapContainerStyle={containerStyle}
-          center={center}
-          zoom={10}
-        >
-          {directions && <DirectionsRenderer directions={directions} />}
-        </GoogleMap>
+        {/* ================= MAP ================= */}
+        <section className="py-12 px-4">
+          <div className="max-w-[1200px] mx-auto rounded-xl overflow-hidden shadow-md">
+            <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={10}>
+              {directions && <DirectionsRenderer directions={directions} />}
+            </GoogleMap>
+          </div>
+        </section>
+
+        {/* ================= WHY US ================= */}
+        <section className="py-16">
+          <h2 className="text-center text-2xl font-bold mb-10">
+            Why travel with us?
+          </h2>
+
+          <div className="max-w-[1200px] mx-auto grid md:grid-cols-3 gap-6 px-6">
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+              <MapPin className="w-10 h-10 mx-auto text-[var(--color-primary)] mb-4" />
+              <h3 className="font-semibold mb-2">Travel everywhere</h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Access thousands of routes and destinations, even those not covered by trains or buses.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+              <Wallet className="w-10 h-10 mx-auto text-[var(--color-primary)] mb-4" />
+              <h3 className="font-semibold mb-2">Prices like nowhere</h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Save money on every trip. Carpooling is the most affordable way to travel long distances.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+              <ShieldCheck className="w-10 h-10 mx-auto text-[var(--color-primary)] mb-4" />
+              <h3 className="font-semibold mb-2">Ride with confidence</h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                We verify all our members and provide 24/7 support for a safe journey.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ================= CTA ================= */}
+        <section className="px-6 py-12">
+          <div className="max-w-[1200px] mx-auto bg-[var(--color-primary)] rounded-xl p-8 flex flex-col md:flex-row items-center justify-between text-white">
+            <div>
+              <h3 className="text-2xl font-bold mb-2">
+                Driving somewhere soon?
+              </h3>
+              <p className="text-white/90">
+                Share your ride and save on travel costs! It only takes a minute.
+              </p>
+            </div>
+
+            <button className="mt-6 md:mt-0 bg-white text-[var(--color-primary)] px-6 py-3 rounded-lg font-semibold">
+              + Publish a ride
+            </button>
+          </div>
+        </section>
+
+        {/* ================= FOOTER ================= */}
+        <footer className="border-t py-12 text-sm">
+          <div className="max-w-[1200px] mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 px-6">
+            {[
+              { title: "Company", items: ["About us", "Press", "Careers"] },
+              { title: "Community", items: ["Safety", "Trust & Quality", "Reviews"] },
+              { title: "Support", items: ["Help Center", "Contact us", "Refund policy"] },
+              { title: "Legal", items: ["Terms & Conditions", "Privacy Policy", "Cookies"] },
+            ].map((col) => (
+              <div key={col.title}>
+                <h4 className="font-semibold mb-3">{col.title}</h4>
+                <ul className="space-y-2 text-[var(--color-text-secondary)]">
+                  {col.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center mt-10 text-[var(--color-text-muted)]">
+            © 2024 RideShare. All rights reserved.
+          </p>
+        </footer>
       </div>
     </LoadScript>
   );

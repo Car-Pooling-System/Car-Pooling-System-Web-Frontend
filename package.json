@@ -13,8 +13,10 @@
     "@clerk/clerk-react": "^5.60.0",
     "@react-google-maps/api": "^2.20.8",
     "@tailwindcss/vite": "^4.1.18",
+    "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-router-dom": "^7.13.0",
+    "styled-components": "^6.3.8",
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
