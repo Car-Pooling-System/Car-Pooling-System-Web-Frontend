@@ -13,6 +13,8 @@
     "@clerk/clerk-react": "^5.60.0",
     "@react-google-maps/api": "^2.20.8",
     "@tailwindcss/vite": "^4.1.18",
+    "axios": "^1.13.4",
+    "firebase": "^12.8.0",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-router-dom": "^7.13.0",
