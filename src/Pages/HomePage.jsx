@@ -10,8 +10,10 @@ import {
   SignedOut,
   SignInButton,
   SignUpButton,
-  UserButton,
+  useClerk,
+  useUser,
 } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 
 import {
   Car,
@@ -20,6 +22,9 @@ import {
   MapPin,
   Wallet,
   ShieldCheck,
+  LogOut,
+  UserCircle,
+  ChevronDown,
 } from "lucide-react";
 
 import heroBg from "../assets/hero-bg.png"; // ✅ Vite-safe import
@@ -35,6 +40,10 @@ const center = {
 };
 
 export default function HomePage() {
+  const navigate = useNavigate();
+  const { signOut } = useClerk();
+  const { user } = useUser();
+  const [showDropdown, setShowDropdown] = useState(false);
   const originRef = useRef();
   const destinationRef = useRef();
 
@@ -112,7 +121,48 @@ export default function HomePage() {
               </SignedOut>
 
               <SignedIn>
-                <UserButton afterSignOutUrl="/" />
+                <div className="relative">
+                  {/* Avatar Button */}
+                  <button
+                    onClick={() => setShowDropdown(!showDropdown)}
+                    onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                    className="flex items-center gap-2 hover:opacity-80 transition"
+                  >
+                    <img
+                      src={user?.imageUrl}
+                      alt="Profile"
+                      className="w-10 h-10 rounded-full border-2 border-[var(--color-primary)]"
+                    />
+                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {showDropdown && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      <button
+                        onClick={() => {
+                          setShowDropdown(false);
+                          navigate('/profile');
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-gray-700"
+                      >
+                        <UserCircle className="w-4 h-4" />
+                        Profile
+                      </button>
+                      <button
+                        onClick={async () => {
+                          setShowDropdown(false);
+                          await signOut();
+                          // User stays on home page after logout
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-red-600"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
               </SignedIn>
             </div>
           </div>

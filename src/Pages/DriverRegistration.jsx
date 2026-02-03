@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { uploadToStorage, deleteFromStorage } from "../../utils/uploadToStorage";
 import axios from "axios";
-import { Car, Upload, FileCheck, User, Trash2 } from "lucide-react";
+import { Car, Upload, FileCheck, User, Trash2, Phone, Mail } from "lucide-react";
 import { useUser } from "@clerk/clerk-react";
 
 export default function DriverRegister() {
@@ -27,6 +27,11 @@ export default function DriverRegister() {
     vehicleRegistration: null,
     insurance: null,
   });
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
   const [errors, setErrors] = useState({});
 
   // Fetch existing driver data on mount
@@ -61,6 +66,9 @@ export default function DriverRegister() {
       }
       if (!vehicle.color.trim()) newErrors.color = "Color is required";
       if (!vehicle.licensePlate.trim()) newErrors.licensePlate = "License Plate is required";
+      if (!phoneNumber.trim()) newErrors.phoneNumber = "Phone number is required";
+      if (!phoneVerified) newErrors.phoneVerified = "Please verify your phone number";
+      if (!emailVerified) newErrors.emailVerified = "Please verify your email address";
     } else if (currentStep === 2) {
       if (vehicle.images.length === 0) newErrors.vehicleImages = "At least one vehicle image is required";
       if (!profileImage) newErrors.profileImage = "Profile image is required";
@@ -122,6 +130,48 @@ export default function DriverRegister() {
     setUseClerkImage(true);
   };
 
+  /* ---------------- PHONE VERIFICATION ---------------- */
+  const sendOTP = async () => {
+    try {
+      setLoading(true);
+      await axios.post(`${BACKEND_URL}/api/phone-verification/send-otp`, { phoneNumber });
+      setOtpSent(true);
+      alert('OTP sent to your phone number');
+    } catch (err) {
+      console.error('Error sending OTP:', err);
+      alert('Failed to send OTP. Please check your phone number.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOTP = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.post(`${BACKEND_URL}/api/phone-verification/verify-otp`, {
+        phoneNumber,
+        code: otp,
+      });
+      if (response.data.verified) {
+        setPhoneVerified(true);
+        alert('Phone number verified successfully!');
+      }
+    } catch (err) {
+      console.error('Error verifying OTP:', err);
+      alert('Invalid OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ---------------- EMAIL VERIFICATION ---------------- */
+  useEffect(() => {
+    // Check if email is verified from Clerk
+    if (user?.primaryEmailAddress?.verification?.status === 'verified') {
+      setEmailVerified(true);
+    }
+  }, [user]);
+
   /* ---------------- SUBMIT ---------------- */
   const submitRegistration = async () => {
     try {
@@ -136,7 +186,10 @@ export default function DriverRegister() {
       // 3️⃣ Save documents
       await axios.put(`${BACKEND_URL}/api/driver-docs/${userId}`, documents);
 
-      // 4️⃣ Determine profile image URL
+      // 4️⃣ Save phone number
+      await axios.put(`${BACKEND_URL}/api/driver-profile/${userId}/phone`, { phoneNumber });
+
+      // 5️⃣ Determine profile image URL
       let finalProfileImage = null;
 
       if (useClerkImage) {
@@ -147,10 +200,10 @@ export default function DriverRegister() {
         finalProfileImage = profileImage;
       }
 
-      // 5️⃣ Send profile image to backend
+      // 6️⃣ Send profile image to backend
       if (finalProfileImage) {
         await axios.put(
-        `${BACKEND_URL}/api/driver-profile/${userId}`,
+          `${BACKEND_URL}/api/driver-profile/${userId}/image`,
           { profileImage: finalProfileImage }
         );
       }
@@ -256,6 +309,74 @@ export default function DriverRegister() {
               onChange={(e) => setVehicle({ ...vehicle, year: e.target.value })}
             />
             {errors.year && <p className="text-red-500 text-sm">{errors.year}</p>}
+          </div>
+
+          <hr className="my-6" />
+
+          <div className="space-y-4">
+            <h3 className="font-semibold flex items-center gap-2">
+              <Phone size={18} /> Verification
+            </h3>
+
+            {/* Phone Verification */}
+            <div className="flex gap-2">
+              <input
+                placeholder="Mobile Number (e.g. +91...)"
+                className="flex-1 px-4 py-3 border rounded-md disabled:bg-gray-100"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                disabled={phoneVerified || otpSent}
+              />
+              {!phoneVerified && !otpSent && (
+                <button
+                  onClick={sendOTP}
+                  disabled={loading || !phoneNumber}
+                  className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-md disabled:opacity-50"
+                >
+                  Send OTP
+                </button>
+              )}
+            </div>
+            {errors.phoneNumber && <p className="text-red-500 text-sm">{errors.phoneNumber}</p>}
+
+            {otpSent && !phoneVerified && (
+              <div className="flex gap-2">
+                <input
+                  placeholder="Enter OTP"
+                  className="flex-1 px-4 py-3 border rounded-md"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                />
+                <button
+                  onClick={verifyOTP}
+                  disabled={loading || !otp}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md"
+                >
+                  Verify
+                </button>
+              </div>
+            )}
+
+            {phoneVerified && (
+              <p className="text-green-600 flex items-center gap-1 text-sm font-medium">
+                ✓ Phone number verified
+              </p>
+            )}
+            {errors.phoneVerified && <p className="text-red-500 text-sm">{errors.phoneVerified}</p>}
+
+            {/* Email Verification Status */}
+            <div className="p-3 bg-gray-50 rounded-md border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Mail size={16} className="text-gray-500" />
+                <span className="text-sm font-medium">{user?.primaryEmailAddress?.emailAddress}</span>
+              </div>
+              {emailVerified ? (
+                <span className="text-green-600 text-sm font-bold">✓ Verified</span>
+              ) : (
+                <span className="text-red-500 text-sm font-bold">! Not Verified in Clerk</span>
+              )}
+            </div>
+            {errors.emailVerified && <p className="text-red-500 text-sm">{errors.emailVerified}</p>}
           </div>
         </div>
       )}
@@ -373,6 +494,7 @@ export default function DriverRegister() {
               <div>Year: {vehicle.year}</div>
               <div>Color: {vehicle.color}</div>
               <div>License Plate: {vehicle.licensePlate}</div>
+              <div>Phone: {phoneNumber}</div>
             </div>
             <div>
               <h4 className="font-medium mb-2">Vehicle Images</h4>
