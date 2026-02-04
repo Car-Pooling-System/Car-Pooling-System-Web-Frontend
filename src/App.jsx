@@ -13,6 +13,8 @@ import Profile from './Pages/Profile';
 import SearchRides from './Pages/SearchRides';
 import RideDetails from './Pages/RideDetails';
 import CreateRide from './components/driver/CreateRide';
+import DriverRides from './components/driver/DriverRides';
+import DriverRideDetails from './components/driver/DriverRideDetails';
 
 function App() {
   return (
@@ -39,6 +41,8 @@ function App() {
 
           {/* Driver */}
           <Route path="/driver/create-ride" element={<CreateRide />} />
+          <Route path="/driver/rides" element={<DriverRides />} />
+          <Route path="/driver/rides/:rideId" element={<DriverRideDetails />} />
         </Route>
       </Routes>
     </BrowserRouter>

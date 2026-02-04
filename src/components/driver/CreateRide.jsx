@@ -203,8 +203,15 @@ export default function CreateRide() {
         console.log("SENDING RIDE PAYLOAD:", payload);
 
         try {
-            await axios.post(`${BACKEND_URL}/api/rides`, payload);
+            const res = await axios.post(`${BACKEND_URL}/api/rides`, payload);
+
+            console.log("CREATED RIDE ID:", res.data._id);
+
             alert("Ride published 🚗");
+
+            
+            Navigate("/driver/rides");
+
         } catch (error) {
             console.error("AXIOS ERROR DETAILS:", error.response?.data || error.message);
             alert(`Failed to publish ride: ${error.response?.data?.message || error.message}`);

@@ -47,7 +47,7 @@ const Auth = () => {
     return (
         <div className="min-h-screen flex items-center justify-center">
             <SignIn
-                redirectUrl="/sso-callback"
+                // redirectUrl="/sso-callback"
                 afterSignInUrl="/home"
             />
         </div>
