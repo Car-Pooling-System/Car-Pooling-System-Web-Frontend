@@ -25,7 +25,7 @@ export default function DriverRegister() {
   const [documents, setDocuments] = useState({
     drivingLicense: null,
     vehicleRegistration: null,
-    insurance: null,
+    insurance: null
   });
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");

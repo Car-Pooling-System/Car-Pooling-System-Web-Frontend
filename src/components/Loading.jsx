@@ -1,10 +1,13 @@
 import React from 'react';
-
+import { useRef } from "react";
+function HomePage() {
+  const userRef = useRef(null);
+}
 const Loader = ({ isDarkMode }) => {
-    return (
-        <>
-            <style>
-                {`
+  return (
+    <>
+      <style>
+        {`
         @keyframes bounceCustom {
           0% {
             top: 60px;
@@ -44,44 +47,44 @@ const Loader = ({ isDarkMode }) => {
           animation: shadowCustom 0.5s alternate infinite ease-in-out;
         }
         `}
-            </style>
+      </style>
 
-            <div
-                className={`fixed inset-0 flex items-center justify-center z-50 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-[#f3f4f6]'
-                    }`}
-            >
-                <div className="relative w-[200px] h-[60px]">
-                    {/* Circles */}
-                    <div
-                        className={`absolute w-5 h-5 rounded-full left-[15%] animate-bounce-custom delay-[0s] ${isDarkMode ? 'bg-white' : 'bg-gray-800'
-                            }`}
-                    />
-                    <div
-                        className={`absolute w-5 h-5 rounded-full left-[45%] animate-bounce-custom delay-[0.2s] ${isDarkMode ? 'bg-white' : 'bg-gray-800'
-                            }`}
-                    />
-                    <div
-                        className={`absolute w-5 h-5 rounded-full right-[15%] animate-bounce-custom delay-[0.3s] ${isDarkMode ? 'bg-white' : 'bg-gray-800'
-                            }`}
-                    />
+      <div
+        className={`fixed inset-0 flex items-center justify-center z-50 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-[#f3f4f6]'
+          }`}
+      >
+        <div className="relative w-[200px] h-[60px]">
+          {/* Circles */}
+          <div
+            className={`absolute w-5 h-5 rounded-full left-[15%] animate-bounce-custom delay-[0s] ${isDarkMode ? 'bg-white' : 'bg-gray-800'
+              }`}
+          />
+          <div
+            className={`absolute w-5 h-5 rounded-full left-[45%] animate-bounce-custom delay-[0.2s] ${isDarkMode ? 'bg-white' : 'bg-gray-800'
+              }`}
+          />
+          <div
+            className={`absolute w-5 h-5 rounded-full right-[15%] animate-bounce-custom delay-[0.3s] ${isDarkMode ? 'bg-white' : 'bg-gray-800'
+              }`}
+          />
 
-                    {/* Shadows */}
-                    <div
-                        className={`absolute w-5 h-1 rounded-full opacity-90 blur-sm top-[62px] left-[15%] -z-10 animate-shadow-custom delay-[0s] ${isDarkMode ? 'bg-black' : 'bg-gray-500'
-                            }`}
-                    />
-                    <div
-                        className={`absolute w-5 h-1 rounded-full opacity-90 blur-sm top-[62px] left-[45%] -z-10 animate-shadow-custom delay-[0.2s] ${isDarkMode ? 'bg-black' : 'bg-gray-500'
-                            }`}
-                    />
-                    <div
-                        className={`absolute w-5 h-1 rounded-full opacity-90 blur-sm top-[62px] right-[15%] -z-10 animate-shadow-custom delay-[0.3s] ${isDarkMode ? 'bg-black' : 'bg-gray-500'
-                            }`}
-                    />
-                </div>
-            </div>
-        </>
-    );
+          {/* Shadows */}
+          <div
+            className={`absolute w-5 h-1 rounded-full opacity-90 blur-sm top-[62px] left-[15%] -z-10 animate-shadow-custom delay-[0s] ${isDarkMode ? 'bg-black' : 'bg-gray-500'
+              }`}
+          />
+          <div
+            className={`absolute w-5 h-1 rounded-full opacity-90 blur-sm top-[62px] left-[45%] -z-10 animate-shadow-custom delay-[0.2s] ${isDarkMode ? 'bg-black' : 'bg-gray-500'
+              }`}
+          />
+          <div
+            className={`absolute w-5 h-1 rounded-full opacity-90 blur-sm top-[62px] right-[15%] -z-10 animate-shadow-custom delay-[0.3s] ${isDarkMode ? 'bg-black' : 'bg-gray-500'
+              }`}
+          />
+        </div>
+      </div>
+    </>
+  );
 };
 
 export default Loader;
