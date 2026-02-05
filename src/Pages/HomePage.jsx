@@ -28,6 +28,8 @@ import {
   LogOut,
   UserCircle,
   ChevronDown,
+  Plus,
+  Minus,
 } from "lucide-react";
 
 import heroBg from "../assets/hero-bg.png"; // ✅ Vite-safe import
@@ -296,30 +298,37 @@ export default function HomePage() {
                   <div className="h-6 w-px bg-[var(--color-border)]" />
 
                   {/* Passenger */}
-                  <div className="flex items-center gap-2 px-4 min-w-[170px]">
+                  <div className="flex items-center gap-3 px-4">
                     <User className="w-4 h-4 text-[var(--color-text-muted)]" />
-                    <select
-                      value={passengers}
-                      onChange={(e) => setPassengers(Number(e.target.value))}
-                      className="outline-none bg-transparent text-sm text-[var(--color-text-primary)] cursor-pointer"
-                    >
-                      {[1, 2, 3, 4, 5, 6].map((n) => (
-                        <option key={n} value={n}>
-                          {n} passenger{n > 1 && "s"}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setPassengers(Math.max(1, passengers - 1))}
+                        className="p-1 hover:bg-gray-200 rounded-md transition"
+                      >
+                        <Minus className="w-4 h-4 text-[var(--color-primary)]" />
+                      </button>
+                      <span className="text-sm font-semibold text-[var(--color-text-primary)] min-w-[24px] text-center">
+                        {passengers}
+                      </span>
+                      <button
+                        onClick={() => setPassengers(Math.min(6, passengers + 1))}
+                        className="p-1 hover:bg-gray-200 rounded-md transition"
+                      >
+                        <Plus className="w-4 h-4 text-[var(--color-primary)]" />
+                      </button>
+                    </div>
                   </div>
 
                   <button
                     onClick={calculateRoute}
-                    className="px-8 py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold"
+                    className="ml-auto flex-shrink-0 px-6 py-2 bg-[var(--color-primary)] text-white rounded-full font-semibold hover:brightness-110 transition -mr-3"
                   >
                     Search
                   </button>
                 </div>
               </div>
             </div>
+          </div>
         </section >
 
         {/* ================= ROUTE INFO ================= */}
