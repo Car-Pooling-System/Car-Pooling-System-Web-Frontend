@@ -1,31 +1,58 @@
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+
 import Auth from "./Auth/Auth";
 import ProtectedRoute from "./Auth/ProtectedRoute";
+
 import HomePage from './Pages/HomePage';
-import DriverRegister from './Pages/DriverRegistration';
 import RoleSelection from './Pages/RoleSelection';
-import Profile from './Pages/Profile';
-import RiderRegistration from './Pages/RiderRegistration';
+
+// 🔥 DRIVER PAGES
+import DriverRegister from './Pages/driver/DriverRegistration';
+import CreateRide from './Pages/driver/CreateRide';
+import DriverRides from './Pages/driver/DriverRides';
+import DriverRideDetails from './Pages/driver/DriverRideDetails';
+import Profile from './Pages/driver/Profile';
+
+// 🔥 RIDER PAGES
+import RiderRegistration from './Pages/rider/RiderRegistration';
+import SearchRides from './Pages/rider/SearchRides';
+import RideDetails from './Pages/rider/RideDetails';
+import RiderRideDetails from './Pages/rider/RiderRideDetails';
+import RiderRides from './Pages/rider/RiderRides';
 
 function App() {
   return (
-    <>
-      <BrowserRouter>
-        <Routes>
-          <Route path='/' element={<Auth />}></Route>
-          <Route path='/role-selection' element={<RoleSelection />}></Route>
-          <Route path="/sso-callback" element={<h1>Redirecting</h1>} />
-          <Route element={<ProtectedRoute />}>
-            <Route path="/home" element={<HomePage />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/reg-driver" element={<DriverRegister />} />
-            <Route path="/reg-rider" element={<RiderRegistration />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </>
+    <BrowserRouter>
+      <Routes>
+        {/* ---------- PUBLIC ---------- */}
+        <Route path="/" element={<Auth />} />
+        <Route path="/role-selection" element={<RoleSelection />} />
+        <Route path="/sso-callback" element={<h1>Redirecting...</h1>} />
+
+        {/* ---------- PROTECTED ---------- */}
+        <Route element={<ProtectedRoute />}>
+          {/* Common */}
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/profile" element={<Profile />} />
+
+          {/* Registration */}
+          <Route path="/reg-driver" element={<DriverRegister />} />
+          <Route path="/reg-rider" element={<RiderRegistration />} />
+
+          {/* Rider */}
+          <Route path="/rides/search" element={<SearchRides />} />
+          <Route path="/rides/:rideId/details" element={<RiderRideDetails />} />
+          <Route path="/rides/:rideId" element={<RideDetails />} />
+          <Route path="/rider/rides" element={<RiderRides />} />
+
+          {/* Driver */}
+          <Route path="/driver/create-ride" element={<CreateRide />} />
+          <Route path="/driver/rides" element={<DriverRides />} />
+          <Route path="/driver/rides/:rideId" element={<DriverRideDetails />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
-export default App
+export default App;

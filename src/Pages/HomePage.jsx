@@ -102,9 +102,21 @@ export default function HomePage() {
 
             <div className="flex items-center gap-4">
               <nav className="hidden md:flex gap-6 text-sm">
-                {["Search", "Publish", "Safety", "Help"].map((item) => (
+                {(user?.unsafeMetadata?.role === "driver"
+                  ? ["Search", "Publish", "My Rides", "Safety"]
+                  : ["Search", "My Rides", "Safety", "Help"]
+                ).map((item) => (
                   <a
                     key={item}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (item === "Publish") navigate("/driver/create-ride");
+                      if (item === "Search") navigate("/rides/search");
+                      if (item === "My Rides") {
+                        if (user?.unsafeMetadata?.role === "driver") navigate("/driver/rides");
+                        else navigate("/rider/rides");
+                      }
+                    }}
                     href="#"
                     className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition"
                   >
@@ -154,6 +166,17 @@ export default function HomePage() {
                       >
                         <UserCircle className="w-4 h-4" />
                         Profile
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowDropdown(false);
+                          if (user?.unsafeMetadata?.role === "driver") navigate("/driver/rides");
+                          else navigate("/rider/rides");
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-gray-700"
+                      >
+                        <Car className="w-4 h-4" />
+                        My Rides
                       </button>
                       <button
                         onClick={async () => {
@@ -288,19 +311,15 @@ export default function HomePage() {
                     </select>
                   </div>
 
-                  {/* Search Button */}
                   <button
                     onClick={calculateRoute}
-                    className="relative z-10 px-8 py-3 bg-[var(--color-primary)] text-white rounded-full font-semibold hover:brightness-110 transition -translate-x-2 md:-translate-x-4"
+                    className="px-8 py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold"
                   >
                     Search
                   </button>
-
                 </div>
-
               </div>
             </div>
-          </div>
         </section >
 
         {/* ================= ROUTE INFO ================= */}
@@ -374,7 +393,10 @@ export default function HomePage() {
               </p>
             </div>
 
-            <button className="mt-6 md:mt-0 bg-white text-[var(--color-primary)] px-6 py-3 rounded-lg font-semibold">
+            <button
+              onClick={() => navigate("/driver/create-ride")}
+              className="mt-6 md:mt-0 bg-white text-[var(--color-primary)] px-6 py-3 rounded-lg font-semibold"
+            >
               + Publish a ride
             </button>
           </div>
