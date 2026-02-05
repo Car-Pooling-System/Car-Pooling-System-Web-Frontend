@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import axios from "axios";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import {
     LoadScript,
@@ -51,6 +51,7 @@ const decodePolyline = (encoded) => {
 
 export default function CreateRide() {
     const { user } = useUser();
+    const navigate = useNavigate();
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
     /* ---------- ROLE GUARD ---------- */
@@ -209,8 +210,8 @@ export default function CreateRide() {
 
             alert("Ride published 🚗");
 
-            
-            Navigate("/driver/rides");
+
+            navigate("/driver/rides");
 
         } catch (error) {
             console.error("AXIOS ERROR DETAILS:", error.response?.data || error.message);

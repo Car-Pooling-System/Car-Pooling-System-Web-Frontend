@@ -129,13 +129,13 @@ export default function DriverRideDetails() {
         if (!confirm("Are you sure you want to cancel this ride?")) return;
 
         try {
-            console.log("CANCELLING RIDE:", ride._id);
+            console.log("DELETING RIDE:", ride._id);
 
-            await axios.patch(
-                `${BACKEND_URL}/api/rides/${ride._id}/cancel`
+            await axios.delete(
+                `${BACKEND_URL}/api/driver-rides/${ride._id}`
             );
 
-            alert("Ride cancelled");
+            alert("Ride cancelled and deleted");
             navigate("/driver/rides");
         } catch (err) {
             console.error("CANCEL FAILED:", err);

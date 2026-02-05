@@ -4,17 +4,19 @@ import Auth from "./Auth/Auth";
 import ProtectedRoute from "./Auth/ProtectedRoute";
 
 import HomePage from './Pages/HomePage';
-import DriverRegister from './Pages/DriverRegistration';
-import RiderRegistration from './Pages/RiderRegistration';
 import RoleSelection from './Pages/RoleSelection';
-import Profile from './Pages/Profile';
 
-// 🔥 NEW PAGES
-import SearchRides from './Pages/SearchRides';
-import RideDetails from './Pages/RideDetails';
-import CreateRide from './components/driver/CreateRide';
-import DriverRides from './components/driver/DriverRides';
-import DriverRideDetails from './components/driver/DriverRideDetails';
+// 🔥 DRIVER PAGES
+import DriverRegister from './Pages/driver/DriverRegistration';
+import CreateRide from './Pages/driver/CreateRide';
+import DriverRides from './Pages/driver/DriverRides';
+import DriverRideDetails from './Pages/driver/DriverRideDetails';
+import Profile from './Pages/driver/Profile';
+
+// 🔥 RIDER PAGES
+import RiderRegistration from './Pages/rider/RiderRegistration';
+import SearchRides from './Pages/rider/SearchRides';
+import RideDetails from './Pages/rider/RideDetails';
 
 function App() {
   return (

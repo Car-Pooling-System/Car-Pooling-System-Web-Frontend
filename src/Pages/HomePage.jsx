@@ -99,6 +99,11 @@ export default function HomePage() {
                 {["Search", "Publish", "Safety", "Help"].map((item) => (
                   <a
                     key={item}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (item === "Publish") navigate("/driver/create-ride");
+                      if (item === "Search") navigate("/rides/search");
+                    }}
                     href="#"
                     className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition"
                   >
@@ -231,7 +236,11 @@ export default function HomePage() {
                 </div>
 
                 <button
-                  onClick={calculateRoute}
+                  onClick={() => {
+                    calculateRoute();
+                    // Optionally navigate to search results or just show them on map
+                    // navigate("/rides/search"); 
+                  }}
                   className="px-8 py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold"
                 >
                   Search
@@ -310,7 +319,10 @@ export default function HomePage() {
               </p>
             </div>
 
-            <button className="mt-6 md:mt-0 bg-white text-[var(--color-primary)] px-6 py-3 rounded-lg font-semibold">
+            <button
+              onClick={() => navigate("/driver/create-ride")}
+              className="mt-6 md:mt-0 bg-white text-[var(--color-primary)] px-6 py-3 rounded-lg font-semibold"
+            >
               + Publish a ride
             </button>
           </div>
