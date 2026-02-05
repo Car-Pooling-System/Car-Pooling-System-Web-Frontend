@@ -65,6 +65,7 @@ export default function DriverRideDetails() {
     const [ride, setRide] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [removingPassenger, setRemovingPassenger] = useState(null);
 
     /* ---------- FETCH RIDE ---------- */
     useEffect(() => {
@@ -143,6 +144,36 @@ export default function DriverRideDetails() {
         }
     };
 
+    /* ---------- REMOVE PASSENGER ---------- */
+    const removePassenger = async (passengerId, passengerName) => {
+        if (!confirm(`Remove ${passengerName} from this ride?\\n\\nTheir seat will be made available to other riders.`)) {
+            return;
+        }
+
+        try {
+            setRemovingPassenger(passengerId);
+
+            await axios.post(
+                `${BACKEND_URL}/api/rides/${ride._id}/remove-passenger`,
+                {
+                    passengerId,
+                    driverId: user.id
+                }
+            );
+
+            alert(`${passengerName} has been removed from the ride`);
+
+            // Refresh ride data
+            window.location.reload();
+        } catch (err) {
+            console.error("REMOVE PASSENGER FAILED:", err);
+            alert(err.response?.data?.message || "Failed to remove passenger");
+        } finally {
+            setRemovingPassenger(null);
+        }
+    };
+
+
     /* ---------- RENDER ---------- */
     return (
         <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -200,18 +231,38 @@ export default function DriverRideDetails() {
             </div>
 
             {/* PASSENGERS */}
-            <div>
-                <h3 className="font-semibold">Passengers</h3>
-                {passengers.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-md p-6">
+                <h3 className="text-lg font-bold mb-4">
+                    Passengers ({passengers.filter(p => p.status === "confirmed").length}/{seats.total})
+                </h3>
+                {passengers.filter(p => p.status === "confirmed").length === 0 ? (
                     <p className="text-sm text-gray-500">No passengers yet</p>
                 ) : (
-                    passengers.map((p, i) => (
-                        <div key={i} className="border p-3 rounded mb-2">
-                            <p className="font-medium">{p.name}</p>
-                            <p className="text-sm">₹{p.farePaid}</p>
-                            <p className="text-sm">{p.status}</p>
-                        </div>
-                    ))
+                    <div className="space-y-3">
+                        {passengers
+                            .filter(p => p.status === "confirmed")
+                            .map((p, i) => (
+                                <div key={i} className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <img
+                                        src={p.profileImage}
+                                        alt={p.name}
+                                        className="w-12 h-12 rounded-full border-2 border-gray-300"
+                                    />
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-gray-900">{p.name}</p>
+                                        <p className="text-sm text-gray-600">Paid: ₹{p.farePaid}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => removePassenger(p.userId, p.name)}
+                                        disabled={removingPassenger === p.userId}
+                                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {removingPassenger === p.userId ? "Removing..." : "Remove"}
+                                    </button>
+                                </div>
+                            ))
+                        }
+                    </div>
                 )}
             </div>
 

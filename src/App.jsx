@@ -17,6 +17,8 @@ import Profile from './Pages/driver/Profile';
 import RiderRegistration from './Pages/rider/RiderRegistration';
 import SearchRides from './Pages/rider/SearchRides';
 import RideDetails from './Pages/rider/RideDetails';
+import RiderRideDetails from './Pages/rider/RiderRideDetails';
+import RiderRides from './Pages/rider/RiderRides';
 
 function App() {
   return (
@@ -39,7 +41,9 @@ function App() {
 
           {/* Rider */}
           <Route path="/rides/search" element={<SearchRides />} />
+          <Route path="/rides/:rideId/details" element={<RiderRideDetails />} />
           <Route path="/rides/:rideId" element={<RideDetails />} />
+          <Route path="/rider/rides" element={<RiderRides />} />
 
           {/* Driver */}
           <Route path="/driver/create-ride" element={<CreateRide />} />

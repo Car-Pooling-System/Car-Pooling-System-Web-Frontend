@@ -96,13 +96,20 @@ export default function HomePage() {
 
             <div className="flex items-center gap-4">
               <nav className="hidden md:flex gap-6 text-sm">
-                {["Search", "Publish", "Safety", "Help"].map((item) => (
+                {(user?.unsafeMetadata?.role === "driver"
+                  ? ["Search", "Publish", "My Rides", "Safety"]
+                  : ["Search", "My Rides", "Safety", "Help"]
+                ).map((item) => (
                   <a
                     key={item}
                     onClick={(e) => {
                       e.preventDefault();
                       if (item === "Publish") navigate("/driver/create-ride");
                       if (item === "Search") navigate("/rides/search");
+                      if (item === "My Rides") {
+                        if (user?.unsafeMetadata?.role === "driver") navigate("/driver/rides");
+                        else navigate("/rider/rides");
+                      }
                     }}
                     href="#"
                     className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition"
@@ -153,6 +160,17 @@ export default function HomePage() {
                       >
                         <UserCircle className="w-4 h-4" />
                         Profile
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowDropdown(false);
+                          if (user?.unsafeMetadata?.role === "driver") navigate("/driver/rides");
+                          else navigate("/rider/rides");
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-gray-700"
+                      >
+                        <Car className="w-4 h-4" />
+                        My Rides
                       </button>
                       <button
                         onClick={async () => {
