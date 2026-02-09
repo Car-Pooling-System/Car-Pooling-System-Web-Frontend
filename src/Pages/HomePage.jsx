@@ -14,6 +14,9 @@ import {
   useUser,
 } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+import { format } from "date-fns";
 
 import {
   Car,
@@ -25,6 +28,8 @@ import {
   LogOut,
   UserCircle,
   ChevronDown,
+  Plus,
+  Minus,
 } from "lucide-react";
 
 import heroBg from "../assets/hero-bg.png"; // ✅ Vite-safe import
@@ -46,11 +51,14 @@ export default function HomePage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const originRef = useRef();
   const destinationRef = useRef();
+  const originAutoRef = useRef(null);
+  const destinationAutoRef = useRef(null);
 
   const [directions, setDirections] = useState(null);
   const [distance, setDistance] = useState("");
   const [duration, setDuration] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(null);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [passengers, setPassengers] = useState(1);
 
   const calculateRoute = async () => {
@@ -193,95 +201,152 @@ export default function HomePage() {
 
         {/* ================= HERO ================= */}
         <section className="px-6 py-12">
-          <div
-            className="max-w-[1200px] mx-auto rounded-xl overflow-hidden"
-            style={{
-              backgroundImage: `linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.6)), url(${heroBg})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="min-h-[520px] flex flex-col items-center justify-center text-center px-6 gap-6">
-              <h1 className="text-white text-4xl md:text-6xl font-extrabold">
-                Your pick of rides at low prices
-              </h1>
-              <p className="text-white/90 text-lg max-w-2xl">
-                Find the perfect ride from thousands of destinations across the country.
-              </p>
+          <div className="w-full flex items-center justify-center">
+            <div
+              className="w-full bg-white rounded-xl shadow-xl overflow-visible"
+              style={{
+                backgroundImage: `linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.6)), url(${heroBg})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center center",
+                backgroundRepeat: "no-repeat",
+              }}
+            >
+              <div className="max-w-[1100px] mx-auto min-h-[520px] flex flex-col items-center justify-center text-center px-6 gap-6">
+                <h1 className="text-white text-4xl md:text-6xl font-extrabold">
+                  Your pick of rides at low prices
+                </h1>
+                <p className="text-white/90 text-lg max-w-2xl">
+                  Find the perfect ride from thousands of destinations across the country.
+                </p>
 
-              {/* Search Bar */}
-              <div className="w-full max-w-6xl bg-white rounded-xl shadow-lg flex flex-col md:flex-row items-center gap-2 p-2">
+                {/* Search Bar */}
 
-                <Autocomplete>
-                  <input
-                    ref={originRef}
-                    placeholder="Leaving from..."
-                    className="flex-1 px-4 py-3 outline-none text-sm"
-                  />
-                </Autocomplete>
+                {/* Search controls - horizontal on md+ */}
+                <div className="w-full max-w-[1000px] flex flex-col md:flex-row items-center justify-center gap-3 bg-white rounded-full shadow-xl px-6 py-3 mt-8">
 
-                <Autocomplete>
-                  <input
-                    ref={destinationRef}
-                    placeholder="Going to..."
-                    className="flex-1 px-4 py-3 outline-none text-sm"
-                  />
-                </Autocomplete>
-
-                <div className="flex items-center gap-2 px-4 py-3 text-sm text-[var(--color-text-secondary)]">
-                  <Calendar className="w-4 h-4" />
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="outline-none bg-transparent cursor-pointer"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 px-4 py-3 text-sm">
-                  <User className="w-4 h-4 text-[var(--color-text-secondary)]" />
-                  <select
-                    value={passengers}
-                    onChange={(e) => setPassengers(Number(e.target.value))}
-                    className="outline-none bg-transparent cursor-pointer"
+                  {/* Leaving From */}
+                  <Autocomplete
+                    onLoad={(autocomplete) => {
+                      originAutoRef.current = autocomplete;
+                    }}
+                    onPlaceChanged={() => {
+                      destinationRef.current?.focus();
+                    }}
                   >
-                    {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <option key={n} value={n}>
-                        {n} {n === 1 ? "passenger" : "passengers"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <div className="flex items-center gap-2 px-4 min-w-[240px]">
+                      <MapPin className="w-4 h-4 text-[var(--color-primary)]" />
+                      <input
+                        ref={originRef}
+                        placeholder="Leaving from"
+                        className="outline-none bg-transparent w-full text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
+                      />
+                    </div>
+                  </Autocomplete>
 
-                <button
-                  onClick={() => {
-                    calculateRoute();
-                    // Optionally navigate to search results or just show them on map
-                    // navigate("/rides/search"); 
-                  }}
-                  className="px-8 py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold"
-                >
-                  Search
-                </button>
+                  <div className="h-6 w-px bg-[var(--color-border)]" />
+
+                  {/* Going To */}
+                  <Autocomplete
+                    onLoad={(autocomplete) => {
+                      destinationAutoRef.current = autocomplete;
+                    }}
+                    onPlaceChanged={() => {
+                      // Open the calendar automatically when destination is selected
+                      setShowCalendar(true);
+                    }}
+                  >
+                    <div className="flex items-center gap-2 px-4 min-w-[240px]">
+                      <MapPin className="w-4 h-4 text-[var(--color-primary)]" />
+                      <input
+                        ref={destinationRef}
+                        placeholder="Going to"
+                        className="outline-none bg-transparent w-full text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
+                      />
+                    </div>
+                  </Autocomplete>
+
+                  <div className="h-6 w-px bg-[var(--color-border)]" />
+
+                  {/* Date — UNCHANGED LOGIC */}
+                  <div className="relative flex items-center px-4 min-w-[160px]">
+                    <button
+                      type="button"
+                      onClick={() => setShowCalendar((prev) => !prev)}
+                      className="flex items-center gap-2 text-sm hover:text-[var(--color-primary)]"
+                    >
+                      <Calendar className="w-4 h-4 text-[var(--color-text-muted)]" />
+                      <span className="whitespace-nowrap">
+                        {date ? format(date, "EEE, dd MMM") : "Today"}
+                      </span>
+                    </button>
+
+                    {showCalendar && (
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-white rounded-xl shadow-xl p-4 z-50 max-w-[90vw]">
+                        <DayPicker
+                          mode="single"
+                          selected={date}
+                          onSelect={(selectedDate) => {
+                            setDate(selectedDate);
+                            setShowCalendar(false);
+                          }}
+                          disabled={{ before: new Date() }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="h-6 w-px bg-[var(--color-border)]" />
+
+                  {/* Passenger */}
+                  <div className="flex items-center gap-3 px-4">
+                    <User className="w-4 h-4 text-[var(--color-text-muted)]" />
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setPassengers(Math.max(1, passengers - 1))}
+                        className="p-1 hover:bg-gray-200 rounded-md transition"
+                      >
+                        <Minus className="w-4 h-4 text-[var(--color-primary)]" />
+                      </button>
+                      <span className="text-sm font-semibold text-[var(--color-text-primary)] min-w-[24px] text-center">
+                        {passengers}
+                      </span>
+                      <button
+                        onClick={() => setPassengers(Math.min(6, passengers + 1))}
+                        className="p-1 hover:bg-gray-200 rounded-md transition"
+                      >
+                        <Plus className="w-4 h-4 text-[var(--color-primary)]" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={calculateRoute}
+                    className="ml-auto flex-shrink-0 px-6 py-2 bg-[var(--color-primary)] text-white rounded-full font-semibold hover:brightness-110 transition -mr-3"
+                  >
+                    Search
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </section>
+        </section >
 
         {/* ================= ROUTE INFO ================= */}
-        {distance && (
-          <section className="py-6 text-center">
-            <p className="text-lg">
-              📏 <b>{distance}</b> &nbsp; ⏱ <b>{duration}</b>
-            </p>
-            <button
-              onClick={clearRoute}
-              className="mt-4 px-6 py-2 rounded-md bg-[var(--color-primary-muted)] text-[var(--color-primary)] font-semibold"
-            >
-              Clear Route
-            </button>
-          </section>
-        )}
+        {
+          distance && (
+            <section className="py-6 text-center">
+              <p className="text-lg">
+                📏 <b>{distance}</b> &nbsp; ⏱ <b>{duration}</b>
+              </p>
+              <button
+                onClick={clearRoute}
+                className="mt-4 px-6 py-2 rounded-md bg-[var(--color-primary-muted)] text-[var(--color-primary)] font-semibold"
+              >
+                Clear Route
+              </button>
+            </section>
+          )
+        }
 
         {/* ================= MAP ================= */}
         <section className="py-12 px-4">
@@ -370,7 +435,7 @@ export default function HomePage() {
             © 2024 RideShare. All rights reserved.
           </p>
         </footer>
-      </div>
-    </LoadScript>
+      </div >
+    </LoadScript >
   );
 }
