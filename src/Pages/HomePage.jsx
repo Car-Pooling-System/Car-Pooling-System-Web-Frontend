@@ -10,8 +10,13 @@ import {
   SignedOut,
   SignInButton,
   SignUpButton,
-  UserButton,
+  useClerk,
+  useUser,
 } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+import { format } from "date-fns";
 
 import {
   Car,
@@ -20,6 +25,11 @@ import {
   MapPin,
   Wallet,
   ShieldCheck,
+  LogOut,
+  UserCircle,
+  ChevronDown,
+  Plus,
+  Minus,
 } from "lucide-react";
 
 import heroBg from "../assets/hero-bg.png"; // ✅ Vite-safe import
@@ -35,13 +45,20 @@ const center = {
 };
 
 export default function HomePage() {
+  const navigate = useNavigate();
+  const { signOut } = useClerk();
+  const { user } = useUser();
+  const [showDropdown, setShowDropdown] = useState(false);
   const originRef = useRef();
   const destinationRef = useRef();
+  const originAutoRef = useRef(null);
+  const destinationAutoRef = useRef(null);
 
   const [directions, setDirections] = useState(null);
   const [distance, setDistance] = useState("");
   const [duration, setDuration] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(null);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [passengers, setPassengers] = useState(1);
 
   const calculateRoute = async () => {
@@ -87,9 +104,21 @@ export default function HomePage() {
 
             <div className="flex items-center gap-4">
               <nav className="hidden md:flex gap-6 text-sm">
-                {["Search", "Publish", "Safety", "Help"].map((item) => (
+                {(user?.unsafeMetadata?.role === "driver"
+                  ? ["Search", "Publish", "My Rides", "Safety"]
+                  : ["Search", "My Rides", "Safety", "Help"]
+                ).map((item) => (
                   <a
                     key={item}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (item === "Publish") navigate("/driver/create-ride");
+                      if (item === "Search") navigate("/rides/search");
+                      if (item === "My Rides") {
+                        if (user?.unsafeMetadata?.role === "driver") navigate("/driver/rides");
+                        else navigate("/rider/rides");
+                      }
+                    }}
                     href="#"
                     className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition"
                   >
@@ -112,7 +141,59 @@ export default function HomePage() {
               </SignedOut>
 
               <SignedIn>
-                <UserButton afterSignOutUrl="/" />
+                <div className="relative">
+                  {/* Avatar Button */}
+                  <button
+                    onClick={() => setShowDropdown(!showDropdown)}
+                    onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                    className="flex items-center gap-2 hover:opacity-80 transition"
+                  >
+                    <img
+                      src={user?.imageUrl}
+                      alt="Profile"
+                      className="w-10 h-10 rounded-full border-2 border-[var(--color-primary)]"
+                    />
+                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {showDropdown && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      <button
+                        onClick={() => {
+                          setShowDropdown(false);
+                          navigate('/profile');
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-gray-700"
+                      >
+                        <UserCircle className="w-4 h-4" />
+                        Profile
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowDropdown(false);
+                          if (user?.unsafeMetadata?.role === "driver") navigate("/driver/rides");
+                          else navigate("/rider/rides");
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-gray-700"
+                      >
+                        <Car className="w-4 h-4" />
+                        My Rides
+                      </button>
+                      <button
+                        onClick={async () => {
+                          setShowDropdown(false);
+                          await signOut();
+                          // User stays on home page after logout
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-red-600"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
               </SignedIn>
             </div>
           </div>
@@ -120,91 +201,152 @@ export default function HomePage() {
 
         {/* ================= HERO ================= */}
         <section className="px-6 py-12">
-          <div
-            className="max-w-[1200px] mx-auto rounded-xl overflow-hidden"
-            style={{
-              backgroundImage: `linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.6)), url(${heroBg})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="min-h-[520px] flex flex-col items-center justify-center text-center px-6 gap-6">
-              <h1 className="text-white text-4xl md:text-6xl font-extrabold">
-                Your pick of rides at low prices
-              </h1>
-              <p className="text-white/90 text-lg max-w-2xl">
-                Find the perfect ride from thousands of destinations across the country.
-              </p>
+          <div className="w-full flex items-center justify-center">
+            <div
+              className="w-full bg-white rounded-xl shadow-xl overflow-visible"
+              style={{
+                backgroundImage: `linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.6)), url(${heroBg})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center center",
+                backgroundRepeat: "no-repeat",
+              }}
+            >
+              <div className="max-w-[1100px] mx-auto min-h-[520px] flex flex-col items-center justify-center text-center px-6 gap-6">
+                <h1 className="text-white text-4xl md:text-6xl font-extrabold">
+                  Your pick of rides at low prices
+                </h1>
+                <p className="text-white/90 text-lg max-w-2xl">
+                  Find the perfect ride from thousands of destinations across the country.
+                </p>
 
-              {/* Search Bar */}
-              <div className="w-full max-w-6xl bg-white rounded-xl shadow-lg flex flex-col md:flex-row items-center gap-2 p-2">
+                {/* Search Bar */}
 
-                <Autocomplete>
-                  <input
-                    ref={originRef}
-                    placeholder="Leaving from..."
-                    className="flex-1 px-4 py-3 outline-none text-sm"
-                  />
-                </Autocomplete>
+                {/* Search controls - horizontal on md+ */}
+                <div className="w-full max-w-[1000px] flex flex-col md:flex-row items-center justify-center gap-3 bg-white rounded-full shadow-xl px-6 py-3 mt-8">
 
-                <Autocomplete>
-                  <input
-                    ref={destinationRef}
-                    placeholder="Going to..."
-                    className="flex-1 px-4 py-3 outline-none text-sm"
-                  />
-                </Autocomplete>
-
-                <div className="flex items-center gap-2 px-4 py-3 text-sm text-[var(--color-text-secondary)]">
-                  <Calendar className="w-4 h-4" />
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="outline-none bg-transparent cursor-pointer"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 px-4 py-3 text-sm">
-                  <User className="w-4 h-4 text-[var(--color-text-secondary)]" />
-                  <select
-                    value={passengers}
-                    onChange={(e) => setPassengers(Number(e.target.value))}
-                    className="outline-none bg-transparent cursor-pointer"
+                  {/* Leaving From */}
+                  <Autocomplete
+                    onLoad={(autocomplete) => {
+                      originAutoRef.current = autocomplete;
+                    }}
+                    onPlaceChanged={() => {
+                      destinationRef.current?.focus();
+                    }}
                   >
-                    {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <option key={n} value={n}>
-                        {n} {n === 1 ? "passenger" : "passengers"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <div className="flex items-center gap-2 px-4 min-w-[240px]">
+                      <MapPin className="w-4 h-4 text-[var(--color-primary)]" />
+                      <input
+                        ref={originRef}
+                        placeholder="Leaving from"
+                        className="outline-none bg-transparent w-full text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
+                      />
+                    </div>
+                  </Autocomplete>
 
-                <button
-                  onClick={calculateRoute}
-                  className="px-8 py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold"
-                >
-                  Search
-                </button>
+                  <div className="h-6 w-px bg-[var(--color-border)]" />
+
+                  {/* Going To */}
+                  <Autocomplete
+                    onLoad={(autocomplete) => {
+                      destinationAutoRef.current = autocomplete;
+                    }}
+                    onPlaceChanged={() => {
+                      // Open the calendar automatically when destination is selected
+                      setShowCalendar(true);
+                    }}
+                  >
+                    <div className="flex items-center gap-2 px-4 min-w-[240px]">
+                      <MapPin className="w-4 h-4 text-[var(--color-primary)]" />
+                      <input
+                        ref={destinationRef}
+                        placeholder="Going to"
+                        className="outline-none bg-transparent w-full text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
+                      />
+                    </div>
+                  </Autocomplete>
+
+                  <div className="h-6 w-px bg-[var(--color-border)]" />
+
+                  {/* Date — UNCHANGED LOGIC */}
+                  <div className="relative flex items-center px-4 min-w-[160px]">
+                    <button
+                      type="button"
+                      onClick={() => setShowCalendar((prev) => !prev)}
+                      className="flex items-center gap-2 text-sm hover:text-[var(--color-primary)]"
+                    >
+                      <Calendar className="w-4 h-4 text-[var(--color-text-muted)]" />
+                      <span className="whitespace-nowrap">
+                        {date ? format(date, "EEE, dd MMM") : "Today"}
+                      </span>
+                    </button>
+
+                    {showCalendar && (
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-white rounded-xl shadow-xl p-4 z-50 max-w-[90vw]">
+                        <DayPicker
+                          mode="single"
+                          selected={date}
+                          onSelect={(selectedDate) => {
+                            setDate(selectedDate);
+                            setShowCalendar(false);
+                          }}
+                          disabled={{ before: new Date() }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="h-6 w-px bg-[var(--color-border)]" />
+
+                  {/* Passenger */}
+                  <div className="flex items-center gap-3 px-4">
+                    <User className="w-4 h-4 text-[var(--color-text-muted)]" />
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setPassengers(Math.max(1, passengers - 1))}
+                        className="p-1 hover:bg-gray-200 rounded-md transition"
+                      >
+                        <Minus className="w-4 h-4 text-[var(--color-primary)]" />
+                      </button>
+                      <span className="text-sm font-semibold text-[var(--color-text-primary)] min-w-[24px] text-center">
+                        {passengers}
+                      </span>
+                      <button
+                        onClick={() => setPassengers(Math.min(6, passengers + 1))}
+                        className="p-1 hover:bg-gray-200 rounded-md transition"
+                      >
+                        <Plus className="w-4 h-4 text-[var(--color-primary)]" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={calculateRoute}
+                    className="ml-auto flex-shrink-0 px-6 py-2 bg-[var(--color-primary)] text-white rounded-full font-semibold hover:brightness-110 transition -mr-3"
+                  >
+                    Search
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </section>
+        </section >
 
         {/* ================= ROUTE INFO ================= */}
-        {distance && (
-          <section className="py-6 text-center">
-            <p className="text-lg">
-              📏 <b>{distance}</b> &nbsp; ⏱ <b>{duration}</b>
-            </p>
-            <button
-              onClick={clearRoute}
-              className="mt-4 px-6 py-2 rounded-md bg-[var(--color-primary-muted)] text-[var(--color-primary)] font-semibold"
-            >
-              Clear Route
-            </button>
-          </section>
-        )}
+        {
+          distance && (
+            <section className="py-6 text-center">
+              <p className="text-lg">
+                📏 <b>{distance}</b> &nbsp; ⏱ <b>{duration}</b>
+              </p>
+              <button
+                onClick={clearRoute}
+                className="mt-4 px-6 py-2 rounded-md bg-[var(--color-primary-muted)] text-[var(--color-primary)] font-semibold"
+              >
+                Clear Route
+              </button>
+            </section>
+          )
+        }
 
         {/* ================= MAP ================= */}
         <section className="py-12 px-4">
@@ -260,7 +402,10 @@ export default function HomePage() {
               </p>
             </div>
 
-            <button className="mt-6 md:mt-0 bg-white text-[var(--color-primary)] px-6 py-3 rounded-lg font-semibold">
+            <button
+              onClick={() => navigate("/driver/create-ride")}
+              className="mt-6 md:mt-0 bg-white text-[var(--color-primary)] px-6 py-3 rounded-lg font-semibold"
+            >
               + Publish a ride
             </button>
           </div>
@@ -290,7 +435,7 @@ export default function HomePage() {
             © 2024 RideShare. All rights reserved.
           </p>
         </footer>
-      </div>
-    </LoadScript>
+      </div >
+    </LoadScript >
   );
 }
