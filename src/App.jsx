@@ -9,6 +9,7 @@ import RoleSelection from './Pages/RoleSelection';
 // 🔥 DRIVER PAGES
 import DriverRegister from './Pages/driver/DriverRegistration';
 import CreateRide from './Pages/driver/CreateRide';
+import EditRide from './Pages/driver/EditRide';
 import DriverRides from './Pages/driver/DriverRides';
 import DriverRideDetails from './Pages/driver/DriverRideDetails';
 import Profile from './Pages/driver/Profile';
@@ -49,6 +50,7 @@ function App() {
           <Route path="/driver/create-ride" element={<CreateRide />} />
           <Route path="/driver/rides" element={<DriverRides />} />
           <Route path="/driver/rides/:rideId" element={<DriverRideDetails />} />
+          <Route path="/driver/rides/:rideId/edit" element={<EditRide />} />
         </Route>
       </Routes>
     </BrowserRouter>

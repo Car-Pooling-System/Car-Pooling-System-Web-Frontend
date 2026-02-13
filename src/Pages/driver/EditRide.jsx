@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import axios from "axios";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import {
     LoadScript,
@@ -8,7 +8,7 @@ import {
     Autocomplete,
     DirectionsRenderer,
 } from "@react-google-maps/api";
-import { MapPin, Clock, DollarSign, Zap, Users, Cigarette, PawPrint, ChevronDown, Calendar } from "lucide-react";
+import { MapPin, Clock, DollarSign, Users, Cigarette, PawPrint, Calendar } from "lucide-react";
 
 /* ---------- CONSTANTS ---------- */
 const MAP_LIBRARIES = ["places"];
@@ -50,9 +50,10 @@ const decodePolyline = (encoded) => {
     return points;
 };
 
-export default function CreateRide() {
+export default function EditRide() {
     const { user } = useUser();
     const navigate = useNavigate();
+    const { rideId } = useParams();
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
     /* ---------- ROLE GUARD ---------- */
@@ -68,17 +69,76 @@ export default function CreateRide() {
     const [routeData, setRouteData] = useState(null);
     const [departureTime, setDepartureTime] = useState("");
     const [baseFare, setBaseFare] = useState("");
-    const [rideType, setRideType] = useState("economy"); // economy, premium, executive
     const [pricePerKm, setPricePerKm] = useState(10);
     const [showCalendar, setShowCalendar] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedTime, setSelectedTime] = useState("09:00");
     const [loading, setLoading] = useState(false);
+    const [pageLoading, setPageLoading] = useState(true);
 
     /* ---------- PREFERENCES ---------- */
     const [petsAllowed, setPetsAllowed] = useState(false);
     const [smokingAllowed, setSmokingAllowed] = useState(false);
     const [max2Allowed, setMax2Allowed] = useState(true);
+
+    /* ---------- FETCH RIDE DATA ---------- */
+    useEffect(() => {
+        const fetchRide = async () => {
+            try {
+                const res = await axios.get(`${BACKEND_URL}/api/rides/${rideId}`);
+                const ride = res.data.ride;
+
+                // Pre-populate form fields
+                setBaseFare(ride.pricing?.baseFare || "");
+                setPricePerKm(ride.pricing?.pricePerKm || 10);
+                setPetsAllowed(ride.preferences?.petsAllowed || false);
+                setSmokingAllowed(ride.preferences?.smokingAllowed || false);
+                setMax2Allowed(ride.preferences?.max2Allowed ?? true);
+
+                // Set departure time
+                if (ride.schedule?.departureTime) {
+                    const depDate = new Date(ride.schedule.departureTime);
+                    setSelectedDate(depDate);
+                    setSelectedTime(
+                        `${String(depDate.getHours()).padStart(2, "0")}:${String(
+                            depDate.getMinutes()
+                        ).padStart(2, "0")}`
+                    );
+                    setDepartureTime(ride.schedule.departureTime);
+                }
+
+                // Set route data
+                setRouteData(ride.route);
+
+                // Create directions object for map preview
+                if (ride.route?.encodedPolyline) {
+                    setDirections({
+                        routes: [
+                            {
+                                overview_polyline: ride.route.encodedPolyline,
+                                legs: [
+                                    {
+                                        distance: { value: ride.metrics.totalDistanceKm * 1000 },
+                                        duration: { value: ride.metrics.durationMinutes * 60 },
+                                    },
+                                ],
+                            },
+                        ],
+                    });
+                }
+            } catch (err) {
+                console.error("FAILED TO FETCH RIDE:", err);
+                alert("Failed to load ride details");
+                navigate("/driver/rides");
+            } finally {
+                setPageLoading(false);
+            }
+        };
+
+        if (rideId) {
+            fetchRide();
+        }
+    }, [rideId]);
 
     /* ---------- ROUTE PREVIEW ---------- */
     const previewRoute = async () => {
@@ -97,13 +157,10 @@ export default function CreateRide() {
             travelMode: window.google.maps.TravelMode.DRIVING,
         });
 
-        console.log("GOOGLE ROUTES RAW:", result.routes[0]);
-
         setDirections(result);
 
-        /* ---------- POLYLINE EXTRACTION (ROBUST) ---------- */
+        /* ---------- POLYLINE EXTRACTION ---------- */
         let encoded = null;
-
         const poly = result.routes[0].overview_polyline;
 
         if (typeof poly === "string") {
@@ -112,15 +169,12 @@ export default function CreateRide() {
             encoded = poly.points;
         }
 
-        console.log("EXTRACTED POLYLINE:", encoded);
-
         if (!encoded) {
             alert("Google did not return route polyline");
             return;
         }
 
         const decoded = decodePolyline(encoded);
-        console.log("DECODED POINT COUNT:", decoded.length);
 
         if (!decoded.length) {
             alert("Failed to decode polyline");
@@ -130,8 +184,6 @@ export default function CreateRide() {
         const grids = [...new Set(
             decoded.map(([lng, lat]) => latLngToGrid(lat, lng))
         )];
-
-        console.log("GRIDS COUNT:", grids.length);
 
         setRouteData({
             start: {
@@ -162,7 +214,7 @@ export default function CreateRide() {
                     end.geometry.location.lng()
                 ),
             },
-            encodedPolyline: encoded, // ✅ NEVER NULL
+            encodedPolyline: encoded,
             gridsCovered: grids,
             metrics: {
                 totalDistanceKm:
@@ -173,7 +225,6 @@ export default function CreateRide() {
         });
     };
 
-
     /* ---------- ETA ---------- */
     const estimatedArrival = () => {
         if (!departureTime || !routeData) return null;
@@ -183,55 +234,7 @@ export default function CreateRide() {
         ).toLocaleString();
     };
 
-    /* ---------- CREATE RIDE ---------- */
-    const createRide = async () => {
-        if (!routeData) {
-            alert("Preview route first");
-            return;
-        }
-
-        const payload = {
-            driver: {
-                userId: user.id,
-                name: user.fullName,
-                profileImage: user.imageUrl,
-            },
-            route: routeData,
-            schedule: { departureTime },
-            pricing: {
-                baseFare: Number(baseFare),
-                pricePerKm: Number(pricePerKm),
-                rideType: rideType
-            },
-            seats: { total: 4, available: 4, front: 1, back: 2 },
-            preferences: {
-                petsAllowed,
-                smokingAllowed,
-                max2Allowed,
-            },
-            metrics: routeData.metrics,
-        };
-
-        console.log("SENDING RIDE PAYLOAD:", payload);
-
-        try {
-            setLoading(true);
-            const res = await axios.post(`${BACKEND_URL}/api/rides`, payload);
-
-            console.log("CREATED RIDE ID:", res.data._id);
-
-            alert("Ride published 🚗");
-            navigate("/driver/rides");
-
-        } catch (error) {
-            console.error("AXIOS ERROR DETAILS:", error.response?.data || error.message);
-            alert(`Failed to publish ride: ${error.response?.data?.message || error.message}`);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    /* ---------- HELPER: Calculate Total Fare ---------- */
+    /* ---------- CALCULATE TOTAL FARE ---------- */
     const calculateTotalFare = () => {
         if (!routeData) return 0;
         const km = routeData.metrics.totalDistanceKm;
@@ -240,7 +243,7 @@ export default function CreateRide() {
         return (base + km * perKm).toFixed(2);
     };
 
-    /* ---------- HELPER: Update Departure Time ---------- */
+    /* ---------- UPDATE DEPARTURE TIME ---------- */
     const updateDepartureTime = () => {
         if (!selectedDate || !selectedTime) return;
         const [hours, minutes] = selectedTime.split(":");
@@ -249,7 +252,7 @@ export default function CreateRide() {
         setDepartureTime(dateTime.toISOString());
     };
 
-    /* ---------- CALENDAR HELPER ---------- */
+    /* ---------- CALENDAR HELPERS ---------- */
     const getDaysInMonth = (date) => {
         return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     };
@@ -283,6 +286,52 @@ export default function CreateRide() {
         });
     };
 
+    /* ---------- UPDATE RIDE ---------- */
+    const updateRide = async () => {
+        if (!routeData) {
+            alert("Preview route first");
+            return;
+        }
+
+        const payload = {
+            route: routeData,
+            schedule: { departureTime },
+            pricing: {
+                baseFare: Number(baseFare),
+                pricePerKm: Number(pricePerKm),
+            },
+            preferences: {
+                petsAllowed,
+                smokingAllowed,
+                max2Allowed,
+            },
+            metrics: routeData.metrics,
+        };
+
+        try {
+            setLoading(true);
+            await axios.put(`${BACKEND_URL}/api/rides/${rideId}`, payload);
+            alert("Ride updated successfully! 🚗");
+            navigate("/driver/rides");
+        } catch (error) {
+            console.error("UPDATE ERROR:", error);
+            alert(`Failed to update ride: ${error.response?.data?.message || error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (pageLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+                    <p className="text-gray-600 font-medium">Loading ride details...</p>
+                </div>
+            </div>
+        );
+    }
+
     /* ---------- UI ---------- */
     return (
         <LoadScript
@@ -293,8 +342,8 @@ export default function CreateRide() {
                 <div className="max-w-5xl mx-auto">
                     {/* Header */}
                     <div className="text-center mb-10">
-                        <h1 className="text-4xl font-bold text-gray-800 mb-2">Publish Your Ride</h1>
-                        <p className="text-gray-600">Create and share your ride with passengers</p>
+                        <h1 className="text-4xl font-bold text-gray-800 mb-2">Edit Your Ride</h1>
+                        <p className="text-gray-600">Update ride details and preferences</p>
                     </div>
 
                     <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -316,7 +365,7 @@ export default function CreateRide() {
                                             <Autocomplete onLoad={(a) => (startRef.current = a)}>
                                                 <input
                                                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition"
-                                                    placeholder="Starting location"
+                                                    placeholder={routeData?.start.name || "Starting location"}
                                                 />
                                             </Autocomplete>
                                         </div>
@@ -327,7 +376,7 @@ export default function CreateRide() {
                                             <Autocomplete onLoad={(a) => (endRef.current = a)}>
                                                 <input
                                                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition"
-                                                    placeholder="Destination"
+                                                    placeholder={routeData?.end.name || "Destination"}
                                                 />
                                             </Autocomplete>
                                         </div>
@@ -463,12 +512,12 @@ export default function CreateRide() {
                                                                         }
                                                                     }}
                                                                     className={`p-2 text-sm rounded-lg transition ${!day
-                                                                        ? ""
-                                                                        : isSelected
-                                                                            ? "bg-blue-600 text-white font-bold"
-                                                                            : isToday
-                                                                                ? "bg-blue-100 text-blue-600 font-bold"
-                                                                                : "hover:bg-gray-100"
+                                                                            ? ""
+                                                                            : isSelected
+                                                                                ? "bg-blue-600 text-white font-bold"
+                                                                                : isToday
+                                                                                    ? "bg-blue-100 text-blue-600 font-bold"
+                                                                                    : "hover:bg-gray-100"
                                                                         }`}
                                                                 >
                                                                     {day}
@@ -618,19 +667,19 @@ export default function CreateRide() {
                                 </div>
                             </div>
 
-                            {/* Publish Button */}
+                            {/* Update Button */}
                             <button
-                                onClick={createRide}
+                                onClick={updateRide}
                                 disabled={loading || !routeData || !departureTime || !baseFare}
                                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loading ? (
                                     <span className="flex items-center justify-center gap-2">
                                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                        Publishing...
+                                        Updating...
                                     </span>
                                 ) : (
-                                    "Publish Ride"
+                                    "Update Ride"
                                 )}
                             </button>
                         </div>
