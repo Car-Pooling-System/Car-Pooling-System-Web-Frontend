@@ -57,6 +57,16 @@ export default function EditRide() {
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
     /* ---------- ROLE GUARD ---------- */
+    /* ---------- ROLE GUARD ---------- */
+    // Wait for Clerk to load
+    if (!user && !useUser().isLoaded) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
+
     if (user?.unsafeMetadata?.role !== "driver") {
         return <Navigate to="/home" />;
     }
@@ -512,12 +522,12 @@ export default function EditRide() {
                                                                         }
                                                                     }}
                                                                     className={`p-2 text-sm rounded-lg transition ${!day
-                                                                            ? ""
-                                                                            : isSelected
-                                                                                ? "bg-blue-600 text-white font-bold"
-                                                                                : isToday
-                                                                                    ? "bg-blue-100 text-blue-600 font-bold"
-                                                                                    : "hover:bg-gray-100"
+                                                                        ? ""
+                                                                        : isSelected
+                                                                            ? "bg-blue-600 text-white font-bold"
+                                                                            : isToday
+                                                                                ? "bg-blue-100 text-blue-600 font-bold"
+                                                                                : "hover:bg-gray-100"
                                                                         }`}
                                                                 >
                                                                     {day}

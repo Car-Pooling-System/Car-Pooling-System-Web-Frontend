@@ -5,12 +5,20 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { MapPin, Clock, Navigation, Users, Edit, Trash2, ArrowRight, Car, AlertCircle } from "lucide-react";
 
 export default function DriverRides() {
-    const { user } = useUser();
+    const { user, isLoaded } = useUser();
     const navigate = useNavigate();
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
     const [rides, setRides] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    if (!isLoaded) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
+            </div>
+        );
+    }
 
     if (user?.unsafeMetadata?.role !== "driver") {
         return <Navigate to="/home" />;
