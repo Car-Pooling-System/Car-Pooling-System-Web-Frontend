@@ -20,6 +20,7 @@ import SearchRides from './Pages/rider/SearchRides';
 import RideDetails from './Pages/rider/RideDetails';
 import RiderRideDetails from './Pages/rider/RiderRideDetails';
 import RiderRides from './Pages/rider/RiderRides';
+import DemandPredictionPage from './Pages/DemandPredictionPage';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
           {/* Common */}
           <Route path="/home" element={<HomePage />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/demand-prediction" element={<DemandPredictionPage />} />
 
           {/* Registration */}
           <Route path="/reg-driver" element={<DriverRegister />} />

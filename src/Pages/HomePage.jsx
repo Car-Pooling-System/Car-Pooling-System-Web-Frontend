@@ -32,6 +32,7 @@ import {
   Minus,
   Search,
   Clock,
+  Zap,
 } from "lucide-react";
 
 import heroBg from "../assets/hero-bg.png";
@@ -203,6 +204,12 @@ export default function HomePage() {
                         className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700 transition"
                       >
                         <Car className="w-5 h-5 text-gray-400" /> My Rides
+                      </button>
+                      <button
+                        onClick={() => { setShowDropdown(false); navigate('/demand-prediction'); }}
+                        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700 transition"
+                      >
+                        <Zap className="w-5 h-5 text-indigo-500" /> Demand Predictor
                       </button>
                       <div className="h-px bg-gray-100 my-1" />
                       <button
