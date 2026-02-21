@@ -1,0 +1,43 @@
+:root {
+    --color-primary: #13ec5b;
+    --color-primary-dark: #0ec44c;
+    --color-primary-soft: rgba(19, 236, 91, 0.15);
+    --color-bg: #f6f8f6;
+    --color-surface: #ffffff;
+    --color-surface-muted: #f0f4f2;
+    --color-text-primary: #111813;
+    --color-text-secondary: #61896f;
+    --color-text-muted: #9bb5a7;
+    --color-border: #dbe6df;
+    --color-dark: #0d1f13;
+    --color-dark-surface: #111c14;
+    --color-danger: #e72a08;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+    font-family: "Inter", sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+}
