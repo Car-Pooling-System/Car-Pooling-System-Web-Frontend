@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Search,
     Calendar,
@@ -14,71 +15,33 @@ import {
     Info,
     XCircle,
     Clock as PendingIcon,
-    FileText
+    FileText,
+    Loader2
 } from 'lucide-react';
+import { useProfile } from '../../hooks/useProfile';
+import Navbar from '../../components/layout/Navbar';
 
 const RiderRides = () => {
-    const [rides] = useState([
-        {
-            id: 1,
-            source: "London",
-            sourceDetails: "Victoria Coach Station",
-            destination: "Manchester",
-            destinationDetails: "Piccadilly Gardens",
-            departureTime: "14:30 PM",
-            departureDate: "12 Oct, 2023",
-            price: 45.00,
-            status: "CONFIRMED",
-            type: "car"
-        },
-        {
-            id: 2,
-            source: "Paris",
-            sourceDetails: "Gare du Nord",
-            destination: "Lyon",
-            destinationDetails: "Lyon-Part-Dieu",
-            departureTime: "09:15 AM",
-            departureDate: "15 Oct, 2023",
-            price: 32.00,
-            status: "PENDING",
-            type: "wait"
-        },
-        {
-            id: 3,
-            source: "Berlin",
-            sourceDetails: "Alexanderplatz",
-            destination: "Munich",
-            destinationDetails: "Hauptbahnhof",
-            departureTime: "18:00 PM",
-            departureDate: "08 Oct, 2023",
-            price: 85.00,
-            status: "COMPLETED",
-            type: "check"
-        },
-        {
-            id: 4,
-            source: "Rome",
-            sourceDetails: "Termini Station",
-            destination: "Milan",
-            destinationDetails: "Centrale",
-            departureTime: "11:00 AM",
-            departureDate: "05 Oct, 2023",
-            price: 50.00,
-            status: "CANCELLED",
-            type: "cancel"
-        }
-    ]);
+    const navigate = useNavigate();
+    const { data, loading, error } = useProfile();
+    const [filteredRides, setFilteredRides] = useState([]);
 
-    const stats = {
-        totalTrips: 24,
-        tripsThisWeek: 2,
-        totalSpent: 1240,
-        savedCO2: 120,
-        trustScore: 4.9
+    useEffect(() => {
+        if (data?.bookings) {
+            setFilteredRides(data.bookings);
+        }
+    }, [data]);
+
+    const stats = data?.computed || {
+        completed: 0,
+        cancelled: 0,
+        totalFare: 0,
+        savedCO2: 0, // Mocked for now
+        trustScore: 5.0
     };
 
     const getStatusStyle = (status) => {
-        switch (status) {
+        switch (status?.toUpperCase()) {
             case 'CONFIRMED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
             case 'PENDING': return 'bg-amber-100 text-amber-700 border-amber-200';
             case 'COMPLETED': return 'bg-slate-100 text-slate-600 border-slate-200';
@@ -88,7 +51,7 @@ const RiderRides = () => {
     };
 
     const getStatusIcon = (status) => {
-        switch (status) {
+        switch (status?.toUpperCase()) {
             case 'CONFIRMED': return <CheckCircle className="w-5 h-5 text-emerald-500" />;
             case 'PENDING': return <PendingIcon className="w-5 h-5 text-amber-500" />;
             case 'COMPLETED': return <CheckCircle className="w-5 h-5 text-slate-400" />;
@@ -97,9 +60,18 @@ const RiderRides = () => {
         }
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-            <div className="bg-white border-b border-slate-200 sticky top-0 z-10 p-4">
+            <Navbar />
+            <div className="bg-white border-b border-slate-200 sticky top-16 z-10 p-4">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-4 items-center justify-between">
                     <div className="w-full md:w-1/3 relative">
                         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Search by Location</span>
@@ -147,59 +119,68 @@ const RiderRides = () => {
                     <div className="flex items-center justify-between mb-2">
                         <div>
                             <h1 className="text-3xl font-black text-slate-900">My Rides</h1>
-                            <p className="text-slate-500 mt-1">Showing {rides.length} rides for current criteria</p>
+                            <p className="text-slate-500 mt-1">Showing {filteredRides.length} rides for current criteria</p>
                         </div>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-200">
+                        <button
+                            onClick={() => navigate('/')}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-200"
+                        >
                             <Plus className="w-5 h-5" /> Book New Ride
                         </button>
                     </div>
                     <div className="space-y-4">
-                        {rides.map((ride) => (
-                            <div key={ride.id} className={`bg-white rounded-2xl border border-slate-100 p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm hover:shadow-md transition-shadow ${ride.status === 'CANCELLED' ? 'opacity-60' : ''}`}>
-                                <div className="flex flex-col items-center">
-                                    <span className="text-lg font-bold text-slate-800">{ride.departureTime.split(' ')[0]}</span>
-                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-tighter">{ride.departureTime.split(' ')[1]}</span>
-                                </div>
-                                <div className="flex flex-col flex-1 min-w-[120px]">
-                                    <h3 className="text-lg font-black text-slate-900 leading-tight">{ride.source}</h3>
-                                    <p className="text-xs text-slate-400 font-medium">{ride.sourceDetails}</p>
-                                </div>
-                                <div className="hidden md:flex flex-col items-center flex-1 max-w-[150px] relative px-4">
-                                    <div className="w-full h-[2px] bg-slate-100 relative">
-                                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2">
-                                            {getStatusIcon(ride.status)}
+                        {filteredRides.length === 0 ? (
+                            <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center">
+                                <p className="text-slate-500 font-medium">No rides found. Start your journey by booking a new ride!</p>
+                            </div>
+                        ) : (
+                            filteredRides.map((ride) => (
+                                <div key={ride.id} className={`bg-white rounded-2xl border border-slate-100 p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm hover:shadow-md transition-shadow ${ride.status?.toUpperCase() === 'CANCELLED' ? 'opacity-60' : ''}`}>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-lg font-bold text-slate-800">{ride.departureTime?.split(' ')[0] || '--:--'}</span>
+                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-tighter">{ride.departureTime?.split(' ')[1] || ''}</span>
+                                    </div>
+                                    <div className="flex flex-col flex-1 min-w-[120px]">
+                                        <h3 className="text-lg font-black text-slate-900 leading-tight">{ride.pickupLocation || ride.source}</h3>
+                                        <p className="text-xs text-slate-400 font-medium">{ride.pickupAddress || ride.sourceDetails}</p>
+                                    </div>
+                                    <div className="hidden md:flex flex-col items-center flex-1 max-w-[150px] relative px-4">
+                                        <div className="w-full h-[2px] bg-slate-100 relative">
+                                            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2">
+                                                {getStatusIcon(ride.status)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col flex-1 min-w-[120px] md:text-right">
+                                        <h3 className="text-lg font-black text-slate-900 leading-tight">{ride.dropoffLocation || ride.destination}</h3>
+                                        <p className="text-xs text-slate-400 font-medium">{ride.dropoffAddress || ride.destinationDetails}</p>
+                                    </div>
+                                    <div className="flex flex-col md:items-end min-w-[100px]">
+                                        <span className="text-xs font-bold text-slate-400 mb-1">{ride.departureDate}</span>
+                                        <span className="text-xl font-black text-slate-900">${(ride.totalFare || ride.price || 0).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${getStatusStyle(ride.status)} uppercase`}>
+                                            {ride.status}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
+                                                <Info className="w-4 h-4" />
+                                            </button>
+                                            {ride.status?.toUpperCase() === 'COMPLETED' ? (
+                                                <button className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
+                                                    <FileText className="w-4 h-4" />
+                                                </button>
+                                            ) : ride.status?.toUpperCase() !== 'CANCELLED' && (
+                                                <button className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-rose-400 transition-colors">
+                                                    <XCircle className="w-4 h-4" />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex flex-col flex-1 min-w-[120px] md:text-right">
-                                    <h3 className="text-lg font-black text-slate-900 leading-tight">{ride.destination}</h3>
-                                    <p className="text-xs text-slate-400 font-medium">{ride.destinationDetails}</p>
-                                </div>
-                                <div className="flex flex-col md:items-end min-w-[100px]">
-                                    <span className="text-xs font-bold text-slate-400 mb-1">{ride.departureDate}</span>
-                                    <span className="text-xl font-black text-slate-900">${ride.price.toFixed(2)}</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${getStatusStyle(ride.status)} uppercase`}>
-                                        {ride.status}
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
-                                            <Info className="w-4 h-4" />
-                                        </button>
-                                        {ride.status === 'COMPLETED' ? (
-                                            <button className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
-                                                <FileText className="w-4 h-4" />
-                                            </button>
-                                        ) : ride.status !== 'CANCELLED' && (
-                                            <button className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-rose-400 transition-colors">
-                                                <XCircle className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
                 <div className="space-y-6">
@@ -214,18 +195,18 @@ const RiderRides = () => {
                             <div className="mb-6">
                                 <span className="text-slate-400 text-sm font-medium">Total Trips</span>
                                 <div className="flex items-baseline gap-2 mt-1">
-                                    <h2 className="text-4xl font-black">{stats.totalTrips}</h2>
-                                    <span className="text-emerald-400 text-xs font-bold">+{stats.tripsThisWeek} this week</span>
+                                    <h2 className="text-4xl font-black">{stats.completed + stats.cancelled}</h2>
+                                    <span className="text-emerald-400 text-xs font-bold">+{stats.completed} confirmed</span>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <span className="text-slate-400 text-[10px] font-black tracking-widest uppercase">Spent Overall</span>
-                                    <p className="text-xl font-black mt-1">${stats.totalSpent.toLocaleString()}</p>
+                                    <p className="text-xl font-black mt-1">${stats.totalFare.toLocaleString()}</p>
                                 </div>
                                 <div>
                                     <span className="text-slate-400 text-[10px] font-black tracking-widest uppercase">Saved CO2</span>
-                                    <p className="text-xl font-black mt-1 text-emerald-400">{stats.savedCO2}kg</p>
+                                    <p className="text-xl font-black mt-1 text-emerald-400">{stats.savedCO2 || 0}kg</p>
                                 </div>
                             </div>
                         </div>
@@ -240,7 +221,7 @@ const RiderRides = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-slate-900">Trust Score</h4>
-                                    <p className="text-sm text-slate-500">{stats.trustScore}/5.0 based on last 10 rides</p>
+                                    <p className="text-sm text-slate-500">{stats.trustScore || '5.0'}/5.0 based on last 10 rides</p>
                                 </div>
                             </div>
                             <div className="flex gap-4">
@@ -249,7 +230,9 @@ const RiderRides = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-slate-900">Upcoming Soon</h4>
-                                    <p className="text-sm text-slate-500">London to Manchester in 2 days</p>
+                                    <p className="text-sm text-slate-500">
+                                        {filteredRides.find(r => r.status?.toUpperCase() === 'CONFIRMED')?.source || 'No upcoming rides'}
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex gap-4">
@@ -258,7 +241,7 @@ const RiderRides = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-slate-900">Earnings Saved</h4>
-                                    <p className="text-sm text-slate-500">Shared costs saved you $340 this month</p>
+                                    <p className="text-sm text-slate-500">Shared costs saved you ${Math.floor(stats.totalFare * 0.3)} this month</p>
                                 </div>
                             </div>
                             <div className="flex gap-4">
@@ -267,7 +250,7 @@ const RiderRides = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-slate-900">Environment Hero</h4>
-                                    <p className="text-sm text-slate-500">You're in the top 5% of CO2 savers!</p>
+                                    <p className="text-sm text-slate-500">You're helping reduce carbon footprint!</p>
                                 </div>
                             </div>
                         </div>
