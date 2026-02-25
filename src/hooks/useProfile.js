@@ -14,14 +14,14 @@ import {
  */
 export function useProfile() {
     const { user, isSignedIn, isLoaded } = useUser();
-    const [data, setData]     = useState(null);
+    const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError]   = useState(null);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         if (!isLoaded || !isSignedIn || !user) return;
 
-        const role   = user.unsafeMetadata?.role ?? "rider";
+        const role = user.unsafeMetadata?.role ?? "rider";
         const userId = user.id;
 
         async function fetchAll() {
@@ -29,18 +29,20 @@ export function useProfile() {
             setError(null);
             try {
                 if (role === "driver") {
-                    const [profile, stats, rating, vehiclesRes] = await Promise.allSettled([
+                    const [profile, stats, rating, vehiclesRes, ridesRes] = await Promise.allSettled([
                         getDriverProfile(userId),
                         getDriverStats(userId),
                         getDriverRating(userId),
                         getDriverVehicles(userId),
+                        getDriverRides(userId),
                     ]);
 
                     setData({
                         role: "driver",
-                        profile:  profile.status  === "fulfilled" ? profile.value  : null,
-                        stats:    stats.status    === "fulfilled" ? stats.value    : null,
-                        rating:   rating.status   === "fulfilled" ? rating.value   : null,
+                        profile: profile.status === "fulfilled" ? profile.value : null,
+                        stats: stats.status === "fulfilled" ? stats.value : null,
+                        rating: rating.status === "fulfilled" ? rating.value : null,
+                        rides: ridesRes.status === "fulfilled" ? ridesRes.value : [],
                         vehicles: vehiclesRes.status === "fulfilled" ? vehiclesRes.value.vehicles ?? [] : [],
                     });
                 } else {
@@ -49,9 +51,9 @@ export function useProfile() {
                     const bookings = ridesResult[0].status === "fulfilled" ? ridesResult[0].value : [];
 
                     // Compute stats client-side from bookings
-                    const completed  = bookings.filter((b) => b.status === "confirmed").length;
-                    const cancelled  = bookings.filter((b) => b.status === "cancelled").length;
-                    const totalFare  = bookings.reduce((s, b) => s + (b.farePaid ?? 0), 0);
+                    const completed = bookings.filter((b) => b.status === "confirmed").length;
+                    const cancelled = bookings.filter((b) => b.status === "cancelled").length;
+                    const totalFare = bookings.reduce((s, b) => s + (b.farePaid ?? 0), 0);
 
                     setData({
                         role: "rider",

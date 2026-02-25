@@ -5,6 +5,7 @@ import HomePage from "./pages/HomePage.jsx";
 import SignInPage from "./pages/SignInPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import RiderRides from "./pages/rider/RiderRides.jsx";
+import DriverRides from "./pages/driver/DriverRides.jsx";
 
 // Automatically sets unsafeMetadata.role = "rider" on first sign-in
 function RoleInitializer() {
@@ -21,6 +22,9 @@ function RoleInitializer() {
 }
 
 export default function App() {
+    const { user } = useUser();
+    const role = user?.unsafeMetadata?.role || "rider";
+
     return (
         <>
             <RoleInitializer />
@@ -28,7 +32,10 @@ export default function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/sign-in" element={<SignInPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/my-rides" element={<RiderRides />} />
+                <Route
+                    path="/my-rides"
+                    element={role === "driver" ? <DriverRides /> : <RiderRides />}
+                />
                 {/* Catch-all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
