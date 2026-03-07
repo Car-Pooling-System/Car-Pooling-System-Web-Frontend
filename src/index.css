@@ -1,20 +1,6 @@
-<<<<<<< HEAD
 @import "tailwindcss";
 
-:root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-content: center;
-  min-width: 320px;
-  min-height: 100vh;
-=======
-:root {
+  :root {
     --color-primary: #13ec5b;
     --color-primary-dark: #0ec44c;
     --color-primary-soft: rgba(19, 236, 91, 0.15);
@@ -56,5 +42,4 @@ body,
 ::-webkit-scrollbar-thumb {
     background: var(--color-border);
     border-radius: 3px;
->>>>>>> feat/myrides
 }
