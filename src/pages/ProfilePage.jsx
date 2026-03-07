@@ -54,10 +54,10 @@ export default function ProfilePage() {
 /* ─────────────────────────────────────────────
    Profile Header  (common to both roles)
 ───────────────────────────────────────────── */
-function ProfileHeader({ user, data }) {
-    const role    = data?.role ?? "rider";
+export function ProfileHeader({ user, data }) {
+    const role = data?.role ?? "rider";
     const profile = data?.profile;   // driver only
-    const rating  = data?.rating;    // driver only
+    const rating = data?.rating;    // driver only
 
     const avatarUrl =
         profile?.profileImage ||
@@ -104,7 +104,7 @@ function ProfileHeader({ user, data }) {
                 {role === "driver" && rating && (
                     <div className="flex items-center gap-2">
                         <div className="flex gap-0.5">
-                            {[1,2,3,4,5].map((i) => (
+                            {[1, 2, 3, 4, 5].map((i) => (
                                 <Star
                                     key={i}
                                     size={14}
@@ -145,7 +145,7 @@ function ProfileHeader({ user, data }) {
 /* ─────────────────────────────────────────────
    Driver Body
 ───────────────────────────────────────────── */
-function DriverBody({ data, user }) {
+export function DriverBody({ data, user }) {
     const { profile, stats, vehicles } = data;
     const verification = profile?.verification ?? {};
 
@@ -155,29 +155,29 @@ function DriverBody({ data, user }) {
             {/* Verification badges */}
             <Section title="Verification Status">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <VerifBadge label="Email"          ok={verification.emailVerified} />
-                    <VerifBadge label="Phone"          ok={verification.phoneVerified} />
+                    <VerifBadge label="Email" ok={verification.emailVerified} />
+                    <VerifBadge label="Phone" ok={verification.phoneVerified} />
                     <VerifBadge label="Driving License" ok={verification.drivingLicenseVerified} />
-                    <VerifBadge label="Vehicle"        ok={verification.vehicleVerified} />
+                    <VerifBadge label="Vehicle" ok={verification.vehicleVerified} />
                 </div>
             </Section>
 
             {/* Stats */}
             <Section title="Your Stats">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <StatCard icon={<Car size={18}/>}    label="Rides Hosted"    value={stats?.rides?.hosted    ?? profile?.rides?.hosted    ?? 0} />
-                    <StatCard icon={<ShieldCheck size={18}/>} label="Completed"  value={stats?.rides?.completed ?? profile?.rides?.completed ?? 0} />
-                    <StatCard icon={<Clock size={18}/>}  label="Hours Driven"    value={`${(stats?.hoursDriven ?? profile?.hoursDriven ?? 0).toFixed(1)}h`} />
-                    <StatCard icon={<Route size={18}/>}  label="Km Driven"       value={`${(stats?.distanceDrivenKm ?? profile?.distanceDrivenKm ?? 0).toFixed(0)} km`} />
-                    <StatCard icon={<Banknote size={18}/>} label="Total Earnings" value={`₹${(profile?.earnings?.total ?? 0).toLocaleString()}`} />
-                    <StatCard icon={<Star size={18}/>}   label="Cancelled"       value={stats?.rides?.cancelled ?? profile?.rides?.cancelled ?? 0} />
+                    <StatCard icon={<Car size={18} />} label="Rides Hosted" value={stats?.rides?.hosted ?? profile?.rides?.hosted ?? 0} />
+                    <StatCard icon={<ShieldCheck size={18} />} label="Completed" value={stats?.rides?.completed ?? profile?.rides?.completed ?? 0} />
+                    <StatCard icon={<Clock size={18} />} label="Hours Driven" value={`${(stats?.hoursDriven ?? profile?.hoursDriven ?? 0).toFixed(1)}h`} />
+                    <StatCard icon={<Route size={18} />} label="Km Driven" value={`${(stats?.distanceDrivenKm ?? profile?.distanceDrivenKm ?? 0).toFixed(0)} km`} />
+                    <StatCard icon={<Banknote size={18} />} label="Total Earnings" value={`₹${(profile?.earnings?.total ?? 0).toLocaleString()}`} />
+                    <StatCard icon={<Star size={18} />} label="Cancelled" value={stats?.rides?.cancelled ?? profile?.rides?.cancelled ?? 0} />
                 </div>
             </Section>
 
             {/* Vehicles */}
             <Section title={`Vehicles (${vehicles.length})`}>
                 {vehicles.length === 0 ? (
-                    <EmptyState icon={<Car size={28}/>} text="No vehicles added yet." />
+                    <EmptyState icon={<Car size={28} />} text="No vehicles added yet." />
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {vehicles.map((v, i) => <VehicleCard key={i} vehicle={v} />)}
@@ -192,25 +192,52 @@ function DriverBody({ data, user }) {
 /* ─────────────────────────────────────────────
    Rider Body
 ───────────────────────────────────────────── */
-function RiderBody({ data }) {
+export function RiderBody({ data }) {
     const { bookings, computed } = data;
+    const navigate = useNavigate();
 
     return (
         <div className="flex flex-col gap-6">
 
+            {/* Become Driver Banner */}
+            <div
+                className="rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                style={{ backgroundColor: "var(--color-primary-soft)", border: "1px solid var(--color-primary)" }}
+            >
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-[var(--color-surface)] flex items-center justify-center shrink-0">
+                        <Car size={24} style={{ color: "var(--color-primary-dark)" }} />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-extrabold" style={{ color: "var(--color-primary-dark)" }}>
+                            Earn on your daily commute!
+                        </h2>
+                        <p className="text-sm font-medium mt-1" style={{ color: "var(--color-text-secondary)" }}>
+                            Register as a driver today to start hosting rides and sharing travel costs.
+                        </p>
+                    </div>
+                </div>
+                <button
+                    onClick={() => navigate('/driver/register')}
+                    className="btn-primary whitespace-nowrap px-6 shrink-0 w-full sm:w-auto mt-2 sm:mt-0"
+                >
+                    Become a Driver
+                </button>
+            </div>
+
             {/* Stats */}
             <Section title="Your Stats">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <StatCard icon={<ShieldCheck size={18}/>} label="Rides Completed" value={computed.completed} />
-                    <StatCard icon={<AlertCircle size={18}/>} label="Rides Cancelled"  value={computed.cancelled} />
-                    <StatCard icon={<Banknote size={18}/>}   label="Total Spent"       value={`₹${computed.totalFare.toLocaleString()}`} />
+                    <StatCard icon={<ShieldCheck size={18} />} label="Rides Completed" value={computed.completed} />
+                    <StatCard icon={<AlertCircle size={18} />} label="Rides Cancelled" value={computed.cancelled} />
+                    <StatCard icon={<Banknote size={18} />} label="Total Spent" value={`₹${computed.totalFare.toLocaleString()}`} />
                 </div>
             </Section>
 
             {/* Bookings list */}
             <Section title={`My Bookings (${bookings.length})`}>
                 {bookings.length === 0 ? (
-                    <EmptyState icon={<Car size={28}/>} text="No bookings yet. Find your first ride!" />
+                    <EmptyState icon={<Car size={28} />} text="No bookings yet. Find your first ride!" />
                 ) : (
                     <div className="flex flex-col gap-3">
                         {bookings.map((b) => <BookingCard key={b.bookingId} booking={b} />)}
@@ -245,8 +272,8 @@ function StatCard({ icon, label, value }) {
             style={{ backgroundColor: "var(--color-surface-muted)", border: "1px solid var(--color-border)" }}
         >
             <span style={{ color: "var(--color-primary-dark)" }}>{icon}</span>
-            <span className="text-xl font-extrabold" style={{ color: "var(--color-text-primary)" }}>{value}</span>
-            <span className="text-xs font-medium" style={{ color: "var(--color-text-muted)" }}>{label}</span>
+            <span className="text-[var(--color-text-primary)] font-extrabold text-xl sm:text-2xl mt-1">{value}</span>
+            <span className="text-[var(--color-text-muted)] font-bold text-xs uppercase tracking-wider">{label}</span>
         </div>
     );
 }
@@ -262,7 +289,7 @@ function VerifBadge({ label, ok }) {
         >
             {ok
                 ? <ShieldCheck size={15} style={{ color: "var(--color-primary-dark)", flexShrink: 0 }} />
-                : <ShieldAlert  size={15} style={{ color: "var(--color-danger)", flexShrink: 0 }} />
+                : <ShieldAlert size={15} style={{ color: "var(--color-danger)", flexShrink: 0 }} />
             }
             <span
                 className="text-xs font-semibold leading-tight"
@@ -331,8 +358,8 @@ function VehicleCard({ vehicle }) {
 }
 
 function BookingCard({ booking }) {
-    const ride   = booking.ride;
-    const dep    = ride?.schedule?.departureTime ? new Date(ride.schedule.departureTime) : null;
+    const ride = booking.ride;
+    const dep = ride?.schedule?.departureTime ? new Date(ride.schedule.departureTime) : null;
     const status = booking.status;
     const isConfirmed = status === "confirmed";
 
@@ -365,12 +392,12 @@ function BookingCard({ booking }) {
                 <div className="flex flex-wrap gap-3 mt-1">
                     {dep && (
                         <InfoChip
-                            icon={<CalendarDays size={12}/>}
+                            icon={<CalendarDays size={12} />}
                             text={dep.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                         />
                     )}
                     {ride?.driver?.name && (
-                        <InfoChip icon={<User size={12}/>} text={`Driver: ${ride.driver.name}`} />
+                        <InfoChip icon={<User size={12} />} text={`Driver: ${ride.driver.name}`} />
                     )}
                 </div>
             </div>
