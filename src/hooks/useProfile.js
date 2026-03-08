@@ -4,6 +4,7 @@ import {
     getDriverProfile,
     getDriverStats,
     getDriverRating,
+    getDriverRides,
     getDriverVehicles,
     getRiderRides,
 } from "../lib/api.js";
@@ -17,6 +18,7 @@ export function useProfile() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
         if (!isLoaded || !isSignedIn || !user) return;
@@ -69,7 +71,13 @@ export function useProfile() {
         }
 
         fetchAll();
-    }, [isLoaded, isSignedIn, user]);
+    }, [isLoaded, isSignedIn, user, refreshKey]);
 
-    return { data, loading, error, role: user?.unsafeMetadata?.role ?? "rider" };
+    return {
+        data,
+        loading,
+        error,
+        role: user?.unsafeMetadata?.role ?? "rider",
+        refresh: () => setRefreshKey((value) => value + 1),
+    };
 }
