@@ -148,6 +148,12 @@ export function ProfileHeader({ user, data }) {
 export function DriverBody({ data, user }) {
     const { profile, stats, vehicles } = data;
     const verification = profile?.verification ?? {};
+    const metadata = user?.unsafeMetadata || {};
+    const hasVehicle = Array.isArray(vehicles) && vehicles.length > 0;
+    const emailVerified = user?.primaryEmailAddress?.verification?.status === "verified" || verification.emailVerified;
+    const phoneVerified = verification.phoneVerified;
+    const drivingLicenseVerified = Boolean(metadata?.drivingLicence?.verified || verification.drivingLicenseVerified);
+    const vehicleVerified = Boolean(verification.vehicleVerified || hasVehicle);
 
     return (
         <div className="flex flex-col gap-6">
@@ -155,10 +161,10 @@ export function DriverBody({ data, user }) {
             {/* Verification badges */}
             <Section title="Verification Status">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <VerifBadge label="Email" ok={verification.emailVerified} />
-                    <VerifBadge label="Phone" ok={verification.phoneVerified} />
-                    <VerifBadge label="Driving License" ok={verification.drivingLicenseVerified} />
-                    <VerifBadge label="Vehicle" ok={verification.vehicleVerified} />
+                    <VerifBadge label="Email" ok={emailVerified} />
+                    <VerifBadge label="Phone" ok={phoneVerified} />
+                    <VerifBadge label="Driving License" ok={drivingLicenseVerified} />
+                    <VerifBadge label="Vehicle" ok={vehicleVerified} />
                 </div>
             </Section>
 
