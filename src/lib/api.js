@@ -24,10 +24,19 @@ export const registerDriver = (userId) => post(`/api/driver-register/${userId}`,
 export const updateDriverProfile = (userId, data) => put(`/api/driver-profile/${userId}`, data);
 export const uploadDriverDocs = (userId, data) => put(`/api/driver-docs/${userId}`, data);
 export const addDriverVehicle = (userId, vehicleData) => post(`/api/driver-vehicles/${userId}`, vehicleData);
+export const updateDriverVehicle = (userId, vehicleIndex, vehicleData) => put(`/api/driver-vehicles/${userId}/${vehicleIndex}`, vehicleData);
+export const deleteDriverVehicle = (userId, vehicleIndex) => del(`/api/driver-vehicles/${userId}/${vehicleIndex}`);
 
-export const sendPhoneVerification = (phoneNumber) => post(`/api/phone-verification/send`, { phoneNumber });
-export const verifyPhoneOtp = (phoneNumber, otp) => post(`/api/phone-verification/verify`, { phoneNumber, otp });
+export const sendPhoneVerification = (phoneNumber, userId) => post(`/api/phone-verification/send-otp`, { phoneNumber, userId });
+export const verifyPhoneOtp = (phoneNumber, otp, userId) => post(`/api/phone-verification/verify-otp`, { phoneNumber, code: otp, userId });
 export const updatePhoneOnProfile = (userId, phoneNumber) => put(`/api/driver-profile/${userId}/phone`, { phoneNumber });
+export const uploadFile = async ({ dataUrl, filename, folder }) => {
+    const result = await post(`/api/files/upload`, { dataUrl, filename, folder });
+    if (result?.url?.startsWith("/")) {
+        return `${BASE}${result.url}`;
+    }
+    return result?.url;
+};
 
 // ── Rider ───────────────────────────────────────────────────
 export const getRiderRides = (userId) => get(`/api/rider-rides/${userId}`);
@@ -40,7 +49,10 @@ async function post(path, body) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    if (!res.ok) {
+        const message = await extractErrorMessage(res);
+        throw new Error(message);
+    }
     return res.json();
 }
 
@@ -51,6 +63,30 @@ async function put(path, body) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    if (!res.ok) {
+        const message = await extractErrorMessage(res);
+        throw new Error(message);
+    }
     return res.json();
+}
+
+async function del(path) {
+    const res = await fetch(`${BASE}${path}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) {
+        const message = await extractErrorMessage(res);
+        throw new Error(message);
+    }
+    return res.json();
+}
+
+async function extractErrorMessage(res) {
+    try {
+        const data = await res.json();
+        if (data?.message) return `${res.status}: ${data.message}`;
+    } catch (_) {
+        // Ignore JSON parse errors and fallback to status text.
+    }
+    return `${res.status} ${res.statusText}`;
 }
