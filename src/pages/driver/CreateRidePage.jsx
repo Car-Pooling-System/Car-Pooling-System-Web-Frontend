@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { GoogleMap, useJsApiLoader, Autocomplete, DirectionsRenderer } from "@react-google-maps/api";
 import { MapPin, Calendar, Clock, Car, Users, DollarSign, Settings, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
@@ -21,6 +21,8 @@ function latLngToGrid(lat, lng, size = 0.05) {
 export default function CreateRidePage() {
     const { user, isLoaded: clerkLoaded } = useUser();
     const navigate = useNavigate();
+    const location = useLocation();
+    const duplicateFromRide = location.state?.duplicateFromRide;
     const { data: profileData, loading: profileLoading } = useProfile();
 
     const { isLoaded: mapsLoaded } = useJsApiLoader({
@@ -44,6 +46,33 @@ export default function CreateRidePage() {
 
     const pickupRef = useRef(null);
     const dropRef = useRef(null);
+
+    useEffect(() => {
+        if (!duplicateFromRide) return;
+
+        const departureRaw = duplicateFromRide.schedule?.departureTime || duplicateFromRide.departureDate;
+        const departure = departureRaw ? new Date(departureRaw) : null;
+
+        if (departure && !Number.isNaN(departure.getTime())) {
+            setDate(departure.toISOString().slice(0, 10));
+            setTime(departure.toTimeString().slice(0, 5));
+        }
+
+        if (duplicateFromRide.seats?.total) {
+            setSeats(duplicateFromRide.seats.total);
+        } else if (duplicateFromRide.seatsAvailable) {
+            setSeats(duplicateFromRide.seatsAvailable);
+        }
+
+        const baseFareFromRide = duplicateFromRide.pricing?.baseFare ?? duplicateFromRide.pricePerSeat;
+        if (baseFareFromRide !== undefined && baseFareFromRide !== null) {
+            setBaseFare(String(baseFareFromRide));
+        }
+
+        if (duplicateFromRide.preferences) {
+            setPreferences((prev) => ({ ...prev, ...duplicateFromRide.preferences }));
+        }
+    }, [duplicateFromRide]);
 
     useEffect(() => {
         if (profileData?.vehicles?.length > 0 && !selectedVehicleId) {
@@ -183,6 +212,12 @@ export default function CreateRidePage() {
                             <p className="text-sm font-medium text-slate-500">Publish your route and earn money</p>
                         </div>
                     </div>
+
+                    {duplicateFromRide && (
+                        <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-semibold">
+                            Editing from an upcoming ride: update details and publish as a new offer.
+                        </div>
+                    )}
 
                     {error && (
                         <div className="p-4 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-sm font-bold">
