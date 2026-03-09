@@ -17,7 +17,6 @@ import Navbar from "../../components/layout/Navbar.jsx";
 import Footer from "../../components/layout/Footer.jsx";
 import {
     registerDriver,
-    updateDriverProfile,
     uploadDriverDocs,
     addDriverVehicle,
     uploadFile,
@@ -43,7 +42,6 @@ export default function DriverRegistrationPage() {
     const navigate = useNavigate();
     const { data: profileData, refresh } = useProfile();
     const [currentStep, setCurrentStep] = useState(1);
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     // Redirect if not signed in
@@ -90,10 +88,10 @@ export default function DriverRegistrationPage() {
                             <div key={step.id} className="flex flex-col items-center gap-2 bg-[var(--color-bg)] px-2">
                                 <div
                                     className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors duration-300 ${isCompleted
-                                            ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-white"
-                                            : isCurrent
-                                                ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-surface)]"
-                                                : "border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-surface)]"
+                                        ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-white"
+                                        : isCurrent
+                                            ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-surface)]"
+                                            : "border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-surface)]"
                                         }`}
                                 >
                                     {isCompleted ? <CheckCircle2 size={20} /> : step.icon}
@@ -294,7 +292,7 @@ function Step3Docs({ userId, onNext, prevStep, setError }) {
                     folder: "driver-docs",
                 });
                 setDocs((prev) => ({ ...prev, [key]: uploadedUrl }));
-            } catch (_) {
+            } catch {
                 // Fallback so selection still works if upload endpoint is temporarily unavailable.
                 setDocs((prev) => ({ ...prev, [key]: dataUrl }));
             }
@@ -337,7 +335,6 @@ function Step3Docs({ userId, onNext, prevStep, setError }) {
                         </label>
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">
-                                {/* eslint-disable-next-line react/jsx-key */}
                                 {field.icon}
                             </span>
                             <div className="pl-8">
@@ -396,7 +393,7 @@ function Step4Vehicle({ userId, onNext, prevStep, setError }) {
                             filename: selectedFiles[index]?.name || `vehicle-${index + 1}.jpg`,
                             folder: "vehicle-images",
                         });
-                    } catch (_) {
+                    } catch {
                         return dataUrl;
                     }
                 }),
@@ -427,7 +424,7 @@ function Step4Vehicle({ userId, onNext, prevStep, setError }) {
                     folder: "vehicle-docs",
                 });
                 setVehicle((prev) => ({ ...prev, insuranceDoc: uploadedUrl }));
-            } catch (_) {
+            } catch {
                 setVehicle((prev) => ({ ...prev, insuranceDoc: dataUrl }));
             }
             setError(null);

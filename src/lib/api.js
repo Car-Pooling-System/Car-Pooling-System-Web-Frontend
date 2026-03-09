@@ -85,7 +85,7 @@ async function extractErrorMessage(res) {
     try {
         const data = await res.json();
         if (data?.message) return `${res.status}: ${data.message}`;
-    } catch (_) {
+    } catch {
         // Ignore JSON parse errors and fallback to status text.
     }
     return `${res.status} ${res.statusText}`;

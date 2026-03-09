@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { GoogleMap, useJsApiLoader, Autocomplete, DirectionsRenderer } from "@react-google-maps/api";
@@ -80,7 +80,7 @@ export default function CreateRidePage() {
         }
     }, [profileData, selectedVehicleId]);
 
-    const calculateRoute = () => {
+    const calculateRoute = useCallback(() => {
         if (!pickup || !drop || !window.google) return;
         const directionsService = new window.google.maps.DirectionsService();
         directionsService.route(
@@ -106,11 +106,11 @@ export default function CreateRidePage() {
                 }
             }
         );
-    };
+    }, [pickup, drop]);
 
     useEffect(() => {
         calculateRoute();
-    }, [pickup, drop, mapsLoaded]);
+    }, [calculateRoute, mapsLoaded]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

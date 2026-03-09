@@ -69,10 +69,9 @@ export default function DriverRides() {
     const [cancellingId, setCancellingId] = useState(null);
     const [selectedRide, setSelectedRide] = useState(null);
 
-    const allRides = data?.rides || [];
-    const now = new Date();
-
     const { upcomingRides, pastRides } = useMemo(() => {
+        const allRides = data?.rides || [];
+        const now = new Date();
         const upcoming = [];
         const past = [];
 
@@ -90,7 +89,7 @@ export default function DriverRides() {
         past.sort((a, b) => (getDepartureDate(b)?.getTime() || 0) - (getDepartureDate(a)?.getTime() || 0));
 
         return { upcomingRides: upcoming, pastRides: past };
-    }, [allRides, now]);
+    }, [data?.rides]);
 
     const filteredRides = useMemo(() => {
         const source = activeTab === "upcoming" ? upcomingRides : pastRides;

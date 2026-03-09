@@ -38,7 +38,7 @@ export default function HeroSection() {
     const [searching, setSearching] = useState(false);
     const [routeInfo, setRouteInfo] = useState(null);
     const [showCalendar, setShowCalendar] = useState(false);
-    const [showPassengerPopup, setShowPassengerPopup] = useState(false);
+
 
     const pickupRef = useRef(null);
     const dropRef = useRef(null);
@@ -139,7 +139,7 @@ export default function HeroSection() {
         }, 2000);
     };
 
-    const today = new Date();
+
 
     return (
         <section

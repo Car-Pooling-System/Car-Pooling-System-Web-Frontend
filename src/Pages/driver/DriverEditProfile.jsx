@@ -479,7 +479,7 @@ function DriverDocumentsSection({ userId, documents, refresh }) {
                     folder: "driver-docs",
                 });
                 setForm((prev) => ({ ...prev, [key]: uploadedUrl }));
-            } catch (_) {
+            } catch {
                 setForm((prev) => ({ ...prev, [key]: dataUrl }));
             }
             setError(null);
@@ -598,7 +598,7 @@ function VehicleRegistrationSection({ userId, vehicles, refresh }) {
                             filename: selectedFiles[index]?.name || `vehicle-${index + 1}.jpg`,
                             folder: "vehicle-images",
                         });
-                    } catch (_) {
+                    } catch {
                         return dataUrl;
                     }
                 }),
@@ -626,7 +626,7 @@ function VehicleRegistrationSection({ userId, vehicles, refresh }) {
                     folder: "vehicle-docs",
                 });
                 setVehicle((prev) => ({ ...prev, insuranceDoc: uploadedUrl }));
-            } catch (_) {
+            } catch {
                 setVehicle((prev) => ({ ...prev, insuranceDoc: dataUrl }));
             }
             setError(null);
