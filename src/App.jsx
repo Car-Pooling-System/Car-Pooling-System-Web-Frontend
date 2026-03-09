@@ -33,6 +33,7 @@ function RoleInitializer() {
 export default function App() {
     const { user, isSignedIn } = useUser();
     const role = user?.unsafeMetadata?.role || null;
+    const isDriver = role === "driver";
 
     // If user is signed in but has no role picked, redirect to selection
     const needsRoleSelection = isSignedIn && !role;
@@ -48,12 +49,24 @@ export default function App() {
                 <Route path="/profile" element={<MyProfilePage />} />
                 <Route
                     path="/my-rides"
-                    element={role === "driver" ? <DriverRides /> : <RiderRides />}
+                    element={isDriver ? <DriverRides /> : <RiderRides />}
                 />
-                <Route path="/driver/register" element={<DriverRegistrationPage />} />
-                <Route path="/rider/edit-profile" element={<RiderEditProfile />} />
-                <Route path="/driver/edit-profile" element={<DriverEditProfile />} />
-                <Route path="/driver/create-ride" element={<CreateRidePage />} />
+                <Route
+                    path="/driver/register"
+                    element={isDriver ? <Navigate to="/driver/edit-profile" replace /> : <DriverRegistrationPage />}
+                />
+                <Route
+                    path="/rider/edit-profile"
+                    element={isDriver ? <Navigate to="/driver/edit-profile" replace /> : <RiderEditProfile />}
+                />
+                <Route
+                    path="/driver/edit-profile"
+                    element={isDriver ? <DriverEditProfile /> : <Navigate to="/rider/edit-profile" replace />}
+                />
+                <Route
+                    path="/driver/create-ride"
+                    element={isDriver ? <CreateRidePage /> : <Navigate to="/my-rides" replace />}
+                />
                 <Route path="/search" element={<SearchRidesPage />} />
                 {/* Catch-all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
