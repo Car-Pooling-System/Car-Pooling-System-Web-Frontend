@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useUser, useClerk, SignInButton } from "@clerk/clerk-react";
+import { useUser, useClerk } from "@clerk/clerk-react";
 import {
     User,
     Car,
@@ -192,25 +192,23 @@ export default function Navbar() {
                         </div>
                     ) : (
                         <>
-                            <SignInButton mode="modal">
-                                <button
-                                    className="hidden sm:block text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:opacity-80"
-                                    style={{ color: "var(--color-text-secondary)" }}
-                                >
-                                    Sign In
-                                </button>
-                            </SignInButton>
-                            <SignInButton mode="modal">
-                                <button
-                                    className="text-sm font-bold px-5 py-2 rounded-xl transition-all hover:opacity-90 active:scale-95"
-                                    style={{
-                                        backgroundColor: "var(--color-primary)",
-                                        color: "var(--color-dark)",
-                                    }}
-                                >
-                                    Get App
-                                </button>
-                            </SignInButton>
+                            <Link
+                                to="/sign-in"
+                                className="hidden sm:block text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:opacity-80"
+                                style={{ color: "var(--color-text-secondary)" }}
+                            >
+                                Sign In
+                            </Link>
+                            <Link
+                                to="/sign-up"
+                                className="text-sm font-bold px-5 py-2 rounded-xl transition-all hover:opacity-90 active:scale-95"
+                                style={{
+                                    backgroundColor: "var(--color-primary)",
+                                    color: "var(--color-dark)",
+                                }}
+                            >
+                                Sign Up
+                            </Link>
                         </>
                     )}
 

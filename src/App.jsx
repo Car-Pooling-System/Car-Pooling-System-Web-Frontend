@@ -1,10 +1,12 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { useEffect } from "react";
+
 import HomePage from "./Pages/HomePage.jsx";
 import SignInPage from "./Pages/SignInPage.jsx";
+import SignUpPage from "./Pages/SignUpPage.jsx";
 import ProfilePage from "./Pages/ProfilePage.jsx";
-import RiderRides from "./Pages/rider/RiderRides.jsx";
+import RiderRides from "./Pages/rider/RiderRide.jsx";
 import DriverRides from "./Pages/driver/DriverRides.jsx";
 import DriverRegistrationPage from "./Pages/driver/DriverRegistrationPage.jsx";
 import MyProfilePage from "./Pages/MyProfilePage.jsx";
@@ -13,6 +15,7 @@ import RiderEditProfile from "./Pages/rider/RiderEditProfile.jsx";
 import DriverEditProfile from "./Pages/driver/DriverEditProfile.jsx";
 import SearchRidesPage from "./Pages/SearchRidesPage.jsx";
 import CreateRidePage from "./Pages/driver/CreateRidePage.jsx";
+
 
 // Automatically sets unsafeMetadata.role = "rider" on first sign-in
 // Now redirects to role selection if no role is set
@@ -40,6 +43,7 @@ export default function App() {
             <Routes>
                 <Route path="/" element={needsRoleSelection ? <Navigate to="/role-selection" replace /> : <HomePage />} />
                 <Route path="/sign-in" element={<SignInPage />} />
+                <Route path="/sign-up" element={<SignUpPage />} />
                 <Route path="/role-selection" element={<RoleSelection />} />
                 <Route path="/profile" element={<MyProfilePage />} />
                 <Route

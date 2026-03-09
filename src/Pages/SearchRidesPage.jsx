@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { useUser, SignInButton } from "@clerk/clerk-react";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { useUser } from "@clerk/clerk-react";
 import { Loader2, ArrowLeft, MapPin, Clock, Calendar, Users, Car, CheckCircle2 } from "lucide-react";
 import Navbar from "../components/layout/Navbar.jsx";
 import Footer from "../components/layout/Footer.jsx";
@@ -10,6 +10,10 @@ import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker } from "@react-go
 const LIBRARIES = ["places"];
 const MAP_CONTAINER_STYLE = { width: "100%", height: "100%", borderRadius: "1rem" };
 const DEFAULT_CENTER = { lat: 28.6139, lng: 77.209 };
+const GOOGLE_MAPS_API_KEY =
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+    import.meta.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
+    "";
 
 export default function SearchRidesPage() {
     const [searchParams] = useSearchParams();
@@ -25,7 +29,7 @@ export default function SearchRidesPage() {
 
     // Google Maps API
     const { isLoaded: mapsLoaded } = useJsApiLoader({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+        googleMapsApiKey: GOOGLE_MAPS_API_KEY,
         libraries: LIBRARIES,
     });
 
@@ -242,11 +246,12 @@ export default function SearchRidesPage() {
                                                     Booking Confirmed!
                                                 </div>
                                             ) : !isSignedIn ? (
-                                                <SignInButton mode="modal">
-                                                    <button className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl transition-all">
-                                                        Sign in to Book
-                                                    </button>
-                                                </SignInButton>
+                                                <Link
+                                                    to="/sign-in"
+                                                    className="w-full block text-center bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl transition-all"
+                                                >
+                                                    Sign in to Book
+                                                </Link>
                                             ) : (
                                                 <button
                                                     onClick={handleBook}

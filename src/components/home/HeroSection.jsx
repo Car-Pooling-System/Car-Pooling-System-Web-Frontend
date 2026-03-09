@@ -5,11 +5,15 @@ import { MapPin, Calendar as CalendarIcon, Users, Search, Loader2, Clock, X, Plu
 import { format } from "date-fns";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
-import { SignInButton, useUser } from "@clerk/clerk-react";
+import { useUser } from "@clerk/clerk-react";
 
 const LIBRARIES = ["places"];
 const MAP_CONTAINER_STYLE = { width: "100%", height: "100%" };
 const DEFAULT_CENTER = { lat: 28.6139, lng: 77.209 }; // New Delhi
+const GOOGLE_MAPS_API_KEY =
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+    import.meta.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
+    "";
 
 const MAP_STYLES = [
     { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
@@ -25,7 +29,7 @@ export default function HeroSection() {
     const navigate = useNavigate();
 
     const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+        googleMapsApiKey: GOOGLE_MAPS_API_KEY,
         libraries: LIBRARIES,
     });
 
@@ -340,18 +344,17 @@ export default function HeroSection() {
                                     Find Ride
                                 </button>
                             ) : (
-                                <SignInButton mode="modal">
-                                    <button
-                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
-                                        style={{
-                                            backgroundColor: "var(--color-primary)",
-                                            color: "var(--color-dark)",
-                                        }}
-                                    >
-                                        <Search size={16} />
-                                        Find Ride
-                                    </button>
-                                </SignInButton>
+                                <button
+                                    onClick={() => navigate("/sign-in")}
+                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
+                                    style={{
+                                        backgroundColor: "var(--color-primary)",
+                                        color: "var(--color-dark)",
+                                    }}
+                                >
+                                    <Search size={16} />
+                                    Find Ride
+                                </button>
                             )}
                         </div>
                     </div>

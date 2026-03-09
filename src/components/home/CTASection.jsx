@@ -1,4 +1,4 @@
-import { SignInButton } from "@clerk/clerk-react";
+import { Link } from "react-router-dom";
 import { Smartphone, Play } from "lucide-react";
 
 export default function CTASection() {
@@ -18,18 +18,17 @@ export default function CTASection() {
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-3 mt-2">
-                        <SignInButton mode="modal">
-                            <button
-                                className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-95"
-                                style={{
-                                    backgroundColor: "var(--color-primary)",
-                                    color: "var(--color-dark)",
-                                }}
-                            >
-                                <Smartphone size={16} />
-                                Get Started Free
-                            </button>
-                        </SignInButton>
+                        <Link
+                            to="/sign-up"
+                            className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-95"
+                            style={{
+                                backgroundColor: "var(--color-primary)",
+                                color: "var(--color-dark)",
+                            }}
+                        >
+                            <Smartphone size={16} />
+                            Get Started Free
+                        </Link>
 
                         <button
                             className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm border transition-all hover:opacity-80"

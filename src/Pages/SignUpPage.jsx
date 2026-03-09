@@ -1,14 +1,13 @@
-import { SignIn } from "@clerk/clerk-react";
+import { SignUp } from "@clerk/clerk-react";
 import { Car } from "lucide-react";
 import { clerkAuthAppearance } from "../constants/clerkAppearance.js";
 
-export default function SignInPage() {
+export default function SignUpPage() {
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
             style={{ backgroundColor: "var(--color-bg)" }}
         >
-            {/* Brand header */}
             <div className="flex items-center gap-2 mb-8">
                 <div
                     className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -17,20 +16,18 @@ export default function SignInPage() {
                     <Car size={18} color="#0d1f13" strokeWidth={2.5} />
                 </div>
                 <span className="text-2xl font-extrabold" style={{ color: "var(--color-text-primary)" }}>
-                    Swiftly
+                    CarPool
                 </span>
             </div>
 
-            <SignIn
+            <SignUp
                 routing="path"
-                path="/sign-in"
+                path="/sign-up"
+                signInUrl="/sign-in"
                 afterSignInUrl="/"
                 afterSignUpUrl="/"
-                signUpUrl="/sign-up"
                 appearance={clerkAuthAppearance}
             />
         </div>
     );
 }
-
-

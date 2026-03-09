@@ -48,6 +48,10 @@ function formatDuration(minutes) {
 }
 
 const GOOGLE_LIBRARIES = ["places"];
+const GOOGLE_MAPS_API_KEY =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+  import.meta.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
+  "";
 
 export function CreateRidePage() {
   const navigate = useNavigate();
@@ -63,7 +67,7 @@ export function CreateRidePage() {
   const [directionsError, setDirectionsError] = useState("");
   const { isLoaded: isMapsLoaded } = useJsApiLoader({
     id: "google-map-script",
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: GOOGLE_LIBRARIES,
   });
 
@@ -313,7 +317,7 @@ export function CreateRidePage() {
           </GoogleMap>
         ) : (
           <div className="map-preview__fallback">
-            Set `VITE_GOOGLE_MAPS_API_KEY` to enable live map route preview.
+            Set `VITE_GOOGLE_MAPS_API_KEY` (or `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`) to enable live map route preview.
           </div>
         )}
         <div className="map-preview__badge">
