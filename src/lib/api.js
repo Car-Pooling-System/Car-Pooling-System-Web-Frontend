@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const RAW_BASE =
     import.meta.env.VITE_BACKEND_URL ||
     import.meta.env.EXPO_PUBLIC_BACKEND_URL ||
@@ -8,38 +10,21 @@ const RAW_BASE =
 const BASE = RAW_BASE.endsWith("/") ? RAW_BASE.slice(0, -1) : RAW_BASE;
 export const API_URL = BASE;
 
-function buildUrl(path) {
-    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-    if (BASE.endsWith("/api") && normalizedPath.startsWith("/api/")) {
-        return `${BASE}${normalizedPath.slice(4)}`;
-    }
-    return `${BASE}${normalizedPath}`;
-}
+const api = axios.create({
+    baseURL: BASE,
+    timeout: 15000,
+    headers: { 'Content-Type': 'application/json' },
+    withCredentials: true,
+});
 
-function wrapNetworkError(error) {
-    if (error instanceof TypeError) {
-        return new Error(`Network error: unable to reach backend at ${BASE}`);
+// Response interceptor for data extraction
+api.interceptors.response.use(
+    (response) => response.data,
+    (error) => {
+        const message = error.response?.data?.message || error.message || "Network error: unable to reach backend";
+        return Promise.reject(new Error(message));
     }
-    return error;
-}
-
-async function get(path) {
-    try {
-        const res = await fetch(buildUrl(path));
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        return res.json();
-    } catch (error) {
-        throw wrapNetworkError(error);
-    }
-}
-
-// Lightweight API client wrapper to keep call sites consistent.
-const api = {
-    get,
-    post,
-    put,
-    delete: del,
-};
+);
 
 export default api;
 
@@ -82,7 +67,6 @@ export const updatePhoneOnProfile = (userId, phoneNumber) => api.put(`/api/drive
 
 export const uploadFile = async ({ dataUrl, filename, folder }) => {
     const result = await api.post(`/api/files/upload`, { dataUrl, filename, folder });
-    // result is already response.data due to interceptor
     if (result?.url?.startsWith("/")) {
         return `${BASE}${result.url}`;
     }
@@ -90,48 +74,5 @@ export const uploadFile = async ({ dataUrl, filename, folder }) => {
 };
 
 // ── Rider ───────────────────────────────────────────────────
-export const getRiderRides = (userId) => get(`/api/rider-rides/${userId}`);
-export const bookRide = (rideId, bookData) => post(`/api/rides/${rideId}/book`, bookData);
-
-// Helper for POST
-async function post(path, body) {
-    try {
-        const res = await fetch(buildUrl(path), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-        });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        return res.json();
-    } catch (error) {
-        throw wrapNetworkError(error);
-    }
-}
-
-// Helper for PUT
-async function put(path, body) {
-    try {
-        const res = await fetch(buildUrl(path), {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-        });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        return res.json();
-    } catch (error) {
-        throw wrapNetworkError(error);
-    }
-}
-
-// Helper for DELETE
-async function del(path) {
-    try {
-        const res = await fetch(buildUrl(path), {
-            method: "DELETE",
-        });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        return res.json();
-    } catch (error) {
-        throw wrapNetworkError(error);
-    }
-}
+export const getRiderRides = (userId) => api.get(`/api/rider-rides/${userId}`);
+export const bookRide = (rideId, bookData) => api.post(`/api/rides/${rideId}/book`, bookData);
