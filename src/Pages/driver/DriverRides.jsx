@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "@clerk/clerk-react";
 import {
     ArrowUpRight,
     CalendarDays,
@@ -60,9 +61,20 @@ function getStatusStyle(status) {
     }
 }
 
+function getRidePrice(ride) {
+    const base = ride?.pricing?.baseFare;
+    const perSeat = ride?.pricing?.perSeat;
+    const legacy = ride?.pricePerSeat;
+    if (base !== undefined && base !== null) return Number(base);
+    if (perSeat !== undefined && perSeat !== null) return Number(perSeat);
+    if (legacy !== undefined && legacy !== null) return Number(legacy);
+    return 0;
+}
+
 export default function DriverRides() {
+    const { user } = useUser();
     const navigate = useNavigate();
-    const { data, loading } = useProfile();
+    const { data, loading, refresh } = useProfile();
     const [activeTab, setActiveTab] = useState("upcoming");
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
@@ -106,13 +118,14 @@ export default function DriverRides() {
     }, [activeTab, upcomingRides, pastRides, searchQuery, statusFilter]);
 
     const stats = data?.stats || { totalRides: 0, earnings: 0 };
+    const computedTotalRides = (data?.rides || []).length;
 
     const handleCancel = async (rideId) => {
         if (!window.confirm("Are you sure you want to cancel this ride offer?")) return;
         setCancellingId(rideId);
         try {
-            await cancelRide(rideId);
-            window.location.reload();
+            await cancelRide(rideId, { userId: user?.id });
+            await refresh();
         } catch (err) {
             alert(`Failed to cancel ride: ${err.message}`);
         } finally {
@@ -177,10 +190,10 @@ export default function DriverRides() {
                                 className="w-full pl-10 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
                             >
                                 <option value="all">All Offers</option>
-                                <option value="OPEN">Open</option>
-                                <option value="CONFIRMED">Confirmed</option>
-                                <option value="COMPLETED">Completed</option>
-                                <option value="CANCELLED">Cancelled</option>
+                                <option value="scheduled">Scheduled</option>
+                                <option value="ongoing">Ongoing</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
                         </div>
@@ -196,9 +209,14 @@ export default function DriverRides() {
 
             <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
-                    <div>
+                    <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-white to-emerald-50/50 p-5 shadow-sm">
                         <h1 className="text-3xl font-black text-slate-900">{activeTab === "upcoming" ? "Upcoming Rides" : "Past Rides"}</h1>
                         <p className="text-slate-500 mt-1">{filteredRides.length} {activeTab === "upcoming" ? "upcoming offer(s)" : "past offer(s)"}</p>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-700">Live Offers: {upcomingRides.length}</span>
+                            <span className="px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-700">Hosted: {computedTotalRides}</span>
+                            <span className="px-3 py-1 rounded-full text-xs font-black bg-cyan-100 text-cyan-800">Revenue: {`\u20B9`}{stats.earnings?.toLocaleString() || "0"}</span>
+                        </div>
                     </div>
 
                     <div className="space-y-4">
@@ -220,11 +238,11 @@ export default function DriverRides() {
                             </div>
                         ) : (
                             filteredRides.map((ride, index) => {
-                                const rideId = ride.id || ride._id || index;
+                                const rideId = ride._id || ride.id;
                                 const timing = formatRideTiming(ride);
                                 const isUpcoming = activeTab === "upcoming" && !["CANCELLED", "COMPLETED"].includes((ride.status || "").toUpperCase());
                                 return (
-                                    <div key={rideId} className="bg-white rounded-2xl border border-slate-100 p-5 md:p-6 shadow-sm hover:shadow-md transition-all">
+                                    <div key={rideId || index} className="bg-white rounded-2xl border border-slate-100 p-5 md:p-6 shadow-sm hover:shadow-md transition-all">
                                         <div className="flex flex-col md:flex-row md:items-center gap-5">
                                             <div className="rounded-xl px-4 py-3 border border-emerald-100 bg-emerald-50/70 min-w-[145px]">
                                                 <p className="text-[11px] font-black tracking-widest text-emerald-700">{timing.day}</p>
@@ -256,7 +274,7 @@ export default function DriverRides() {
                                                 <p className="text-xs font-bold text-slate-400 flex md:justify-end items-center gap-1">
                                                     <Users className="w-3 h-3" /> {ride.seatsAvailable ?? ride.seats?.available ?? 0} seats
                                                 </p>
-                                                <p className="text-2xl font-black text-slate-900 mt-1">₹{(ride.pricePerSeat || ride.pricing?.perSeat || 0).toFixed(2)}</p>
+                                                <p className="text-2xl font-black text-slate-900 mt-1">{`\u20B9`}{getRidePrice(ride).toFixed(2)}</p>
                                             </div>
                                         </div>
 
@@ -273,7 +291,7 @@ export default function DriverRides() {
                                                 </button>
                                                 {isUpcoming && (
                                                     <button
-                                                        onClick={() => navigate("/driver/create-ride", { state: { duplicateFromRide: ride } })}
+                                                        onClick={() => navigate("/driver/create-ride", { state: { rideToEdit: ride } })}
                                                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-bold"
                                                     >
                                                         <PencilLine className="w-3.5 h-3.5" /> Edit
@@ -310,14 +328,14 @@ export default function DriverRides() {
                             <div className="mb-6">
                                 <span className="text-slate-400 text-sm font-medium">Total Revenue</span>
                                 <div className="flex items-baseline gap-2 mt-1">
-                                    <h2 className="text-4xl font-black">₹{stats.earnings?.toLocaleString() || "0"}</h2>
+                                    <h2 className="text-4xl font-black">{`\u20B9`}{stats.earnings?.toLocaleString() || "0"}</h2>
                                     <span className="text-emerald-400 text-xs font-bold">Total Payout</span>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <span className="text-slate-400 text-[10px] font-black tracking-widest uppercase">Trips Hosted</span>
-                                    <p className="text-xl font-black mt-1">{stats.totalRides || "0"}</p>
+                                    <p className="text-xl font-black mt-1">{computedTotalRides}</p>
                                 </div>
                                 <div>
                                     <span className="text-slate-400 text-[10px] font-black tracking-widest uppercase">Upcoming</span>
@@ -369,7 +387,7 @@ export default function DriverRides() {
                                 <div>
                                     <h4 className="font-bold text-slate-900">Average Fare</h4>
                                     <p className="text-sm text-slate-500">
-                                        ₹{upcomingRides.length ? (upcomingRides.reduce((sum, ride) => sum + (ride.pricePerSeat || ride.pricing?.perSeat || 0), 0) / upcomingRides.length).toFixed(2) : "0.00"}
+                                        {`\u20B9`}{upcomingRides.length ? (upcomingRides.reduce((sum, ride) => sum + getRidePrice(ride), 0) / upcomingRides.length).toFixed(2) : "0.00"}
                                     </p>
                                 </div>
                             </div>
@@ -407,7 +425,7 @@ export default function DriverRides() {
                             </div>
                             <div>
                                 <p className="text-xs font-black tracking-wider uppercase text-slate-400">Price / Seat</p>
-                                <p className="font-bold text-slate-800">₹{(selectedRide.pricePerSeat || selectedRide.pricing?.perSeat || 0).toFixed(2)}</p>
+                                <p className="font-bold text-slate-800">{`\u20B9`}{getRidePrice(selectedRide).toFixed(2)}</p>
                             </div>
                             <div>
                                 <p className="text-xs font-black tracking-wider uppercase text-slate-400">Status</p>

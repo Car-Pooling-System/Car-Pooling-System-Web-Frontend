@@ -13,7 +13,7 @@ export default function CTASection() {
                         Ready for your next adventure?
                     </h2>
                     <p className="text-sm md:text-base max-w-md leading-relaxed" style={{ color: "#a0c4ab" }}>
-                        Join thousands of users who are already traveling smarter with CarPool. Sign up
+                        Join thousands of users who are already traveling smarter with Swiftly. Sign up
                         free and book your first ride in minutes.
                     </p>
 
@@ -48,3 +48,5 @@ export default function CTASection() {
         </section>
     );
 }
+
+
