@@ -16,7 +16,7 @@ export default function SignInPage() {
                     <Car size={18} color="#0d1f13" strokeWidth={2.5} />
                 </div>
                 <span className="text-2xl font-extrabold" style={{ color: "var(--color-text-primary)" }}>
-                    CarPool
+                    Swiftly
                 </span>
             </div>
 
@@ -47,3 +47,5 @@ export default function SignInPage() {
         </div>
     );
 }
+
+
