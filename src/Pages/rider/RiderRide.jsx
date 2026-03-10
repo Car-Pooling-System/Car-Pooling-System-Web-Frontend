@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 import {
     Search,
     Calendar,
@@ -23,14 +24,16 @@ import {
 } from 'lucide-react';
 import { useProfile } from '../../hooks/useProfile';
 import Navbar from '../../components/layout/Navbar';
-import { calculatePoolingCarbonSavedKg } from '../../utils/poolingCarbon';
+import { cancelRide } from '../../lib/api';
 
 const RiderRides = () => {
     const navigate = useNavigate();
-    const { data, loading } = useProfile();
+    const { user } = useUser();
+    const { data, loading, refresh } = useProfile();
     const [activeTab, setActiveTab] = useState('upcoming');
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [leavingRideId, setLeavingRideId] = useState(null);
 
     const { upcomingRides, pastRides } = useMemo(() => {
         const allRides = data?.bookings || [];
@@ -82,6 +85,42 @@ const RiderRides = () => {
         completed: 0,
         cancelled: 0,
         totalFare: 0,
+    };
+
+    const getRideDoc = (booking) => booking?.ride || {};
+    const getRideId = (booking) => booking?.ride?._id || booking?.rideId || booking?._id;
+    const canLeaveBooking = (booking) => {
+        const status = String(booking?.status || "").toUpperCase();
+        if (status === "CANCELLED" || status === "COMPLETED") return false;
+        const departure = getRideDoc(booking)?.schedule?.departureTime || booking?.departureDate;
+        if (!departure) return true;
+        return new Date(departure) >= new Date();
+    };
+
+    const openRideDetails = (booking) => {
+        const id = getRideId(booking);
+        if (!id) return;
+        navigate(`/my-rides/${id}`, { state: { booking } });
+    };
+
+    const handleLeaveRide = async (booking) => {
+        const rideId = getRideId(booking);
+        if (!rideId || !user?.id) {
+            alert('Unable to cancel this booking right now.');
+            return;
+        }
+
+        if (!window.confirm('Do you want to leave this ride?')) return;
+
+        try {
+            setLeavingRideId(String(rideId));
+            await cancelRide(rideId, { userId: user.id });
+            refresh();
+        } catch (err) {
+            alert(`Failed to leave ride: ${err.message}`);
+        } finally {
+            setLeavingRideId(null);
+        }
     };
 
     const getStatusStyle = (status) => {
@@ -236,62 +275,79 @@ const RiderRides = () => {
                                 )}
                             </div>
                         ) : (
-                            filteredRides.map((ride, index) => {
-                                const carbonSavedKg = calculatePoolingCarbonSavedKg(ride.ride || ride, { includeCurrentRider: true });
-                                return (
-                                <div key={ride.id || ride.bookingId || index} className={`bg-white rounded-2xl border border-slate-100 p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm hover:shadow-md transition-shadow ${ride.status?.toUpperCase() === 'CANCELLED' ? 'opacity-60' : ''}`}>
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-lg font-bold text-slate-800">{ride.departureTime?.split(' ')[0] || '--:--'}</span>
-                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-tighter">{ride.departureTime?.split(' ')[1] || ''}</span>
-                                    </div>
-                                    <div className="flex flex-col flex-1 min-w-[120px]">
-                                        <h3 className="text-lg font-black text-slate-900 leading-tight">
-                                            {ride.pickupLocation || ride.source || ride.ride?.route?.start?.name || '—'}
-                                        </h3>
-                                        <p className="text-xs text-slate-400 font-medium">{ride.pickupAddress || ride.sourceDetails || ''}</p>
-                                    </div>
-                                    <div className="hidden md:flex flex-col items-center flex-1 max-w-[150px] relative px-4">
-                                        <div className="w-full h-[2px] bg-slate-100 relative">
-                                            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2">
-                                                {getStatusIcon(ride.status)}
+                            filteredRides.map((ride, index) => (
+                                <div
+                                    key={ride.id || ride.bookingId || index}
+                                    onClick={() => openRideDetails(ride)}
+                                    className={`bg-white rounded-2xl border border-slate-100 p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer ${ride.status?.toUpperCase() === 'CANCELLED' ? 'opacity-60' : ''}`}
+                                >
+                                    <div className="flex flex-col md:flex-row items-center gap-6">
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-lg font-bold text-slate-800">{ride.departureTime?.split(' ')[0] || '--:--'}</span>
+                                            <span className="text-xs font-semibold text-slate-400 uppercase tracking-tighter">{ride.departureTime?.split(' ')[1] || ''}</span>
+                                        </div>
+                                        <div className="flex flex-col flex-1 min-w-[120px]">
+                                            <h3 className="text-lg font-black text-slate-900 leading-tight">
+                                                {ride.pickupLocation || ride.source || ride.ride?.route?.start?.name || '—'}
+                                            </h3>
+                                            <p className="text-xs text-slate-400 font-medium">{ride.pickupAddress || ride.sourceDetails || ''}</p>
+                                        </div>
+                                        <div className="hidden md:flex flex-col items-center flex-1 max-w-[150px] relative px-4">
+                                            <div className="w-full h-[2px] bg-slate-100 relative">
+                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2">
+                                                    {getStatusIcon(ride.status)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col flex-1 min-w-[120px] md:text-right">
+                                            <h3 className="text-lg font-black text-slate-900 leading-tight">
+                                                {ride.dropoffLocation || ride.destination || ride.ride?.route?.end?.name || '—'}
+                                            </h3>
+                                            <p className="text-xs text-slate-400 font-medium">{ride.dropoffAddress || ride.destinationDetails || ''}</p>
+                                        </div>
+                                        <div className="flex flex-col md:items-end min-w-[100px]">
+                                            <span className="text-xs font-bold text-slate-400 mb-1">{ride.departureDate}</span>
+                                            <span className="text-xl font-black text-slate-900">₹{(ride.totalFare || ride.farePaid || ride.price || 0).toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${getStatusStyle(ride.status)} uppercase`}>
+                                                {ride.status}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openRideDetails(ride);
+                                                    }}
+                                                    className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-slate-400 transition-colors"
+                                                    title="View ride info"
+                                                >
+                                                    <Info className="w-4 h-4" />
+                                                </button>
+                                                {ride.status?.toUpperCase() === 'COMPLETED' ? (
+                                                    <button className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
+                                                        <FileText className="w-4 h-4" />
+                                                    </button>
+                                                ) : canLeaveBooking(ride) && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleLeaveRide(ride);
+                                                        }}
+                                                        disabled={leavingRideId === String(getRideId(ride))}
+                                                        className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-rose-400 transition-colors disabled:opacity-60"
+                                                        title="Leave this ride"
+                                                    >
+                                                        {leavingRideId === String(getRideId(ride))
+                                                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                                                            : <XCircle className="w-4 h-4" />}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col flex-1 min-w-[120px] md:text-right">
-                                        <h3 className="text-lg font-black text-slate-900 leading-tight">
-                                            {ride.dropoffLocation || ride.destination || ride.ride?.route?.end?.name || '—'}
-                                        </h3>
-                                        <p className="text-xs text-slate-400 font-medium">{ride.dropoffAddress || ride.destinationDetails || ''}</p>
-                                    </div>
-                                    <div className="flex flex-col md:items-end min-w-[100px]">
-                                        <span className="text-xs font-bold text-slate-400 mb-1">{ride.departureDate}</span>
-                                        <span className="text-xl font-black text-slate-900">₹{(ride.totalFare || ride.farePaid || ride.price || 0).toFixed(2)}</span>
-                                        <span className="mt-1 text-[11px] font-bold text-emerald-700">
-                                            Saved {carbonSavedKg} kg CO2
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${getStatusStyle(ride.status)} uppercase`}>
-                                            {ride.status}
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
-                                                <Info className="w-4 h-4" />
-                                            </button>
-                                            {ride.status?.toUpperCase() === 'COMPLETED' ? (
-                                                <button className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
-                                                    <FileText className="w-4 h-4" />
-                                                </button>
-                                            ) : ride.status?.toUpperCase() !== 'CANCELLED' && (
-                                                <button className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-rose-400 transition-colors">
-                                                    <XCircle className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
                                 </div>
-                                );
-                            })
+                            ))
                         )}
                     </div>
                 </div>
@@ -364,7 +420,7 @@ const RiderRides = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-slate-900">Environment Hero</h4>
-                                    <p className="text-sm text-slate-500">You're helping reduce carbon footprint!</p>
+                                    <p className="text-sm text-slate-500">Shared costs saved you approx {(data?.co2Saved ?? 0).toFixed(1)} kg CO2!</p>
                                 </div>
                             </div>
                         </div>

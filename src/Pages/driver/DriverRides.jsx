@@ -20,7 +20,6 @@ import {
     TrendingUp,
     Users,
     Wallet,
-    X,
     XCircle,
 } from "lucide-react";
 import Navbar from "../../components/layout/Navbar";
@@ -53,6 +52,7 @@ function getStatusStyle(status) {
         case "SCHEDULED":
             return "bg-emerald-100 text-emerald-700 border-emerald-200";
         case "PENDING":
+        case "REQUESTED":
             return "bg-amber-100 text-amber-700 border-amber-200";
         case "COMPLETED":
             return "bg-slate-100 text-slate-600 border-slate-200";
@@ -81,7 +81,6 @@ export default function DriverRides() {
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [cancellingId, setCancellingId] = useState(null);
-    const [selectedRide, setSelectedRide] = useState(null);
 
     const { upcomingRides, pastRides } = useMemo(() => {
         const allRides = data?.rides || [];
@@ -121,6 +120,12 @@ export default function DriverRides() {
 
     const stats = data?.stats || { totalRides: 0, earnings: 0 };
     const computedTotalRides = (data?.rides || []).length;
+
+    const openRideDetails = (ride) => {
+        const rideId = ride?._id || ride?.id;
+        if (!rideId) return;
+        navigate(`/my-rides/${rideId}`, { state: { ride } });
+    };
 
     const handleCancel = async (rideId) => {
         if (!window.confirm("Are you sure you want to cancel this ride offer?")) return;
@@ -245,7 +250,11 @@ export default function DriverRides() {
                                 const isUpcoming = activeTab === "upcoming" && !["CANCELLED", "COMPLETED"].includes((ride.status || "").toUpperCase());
                                 const carbonSavedKg = calculatePoolingCarbonSavedKg(ride, { includeRequestedPassengers: true });
                                 return (
-                                    <div key={rideId || index} className="bg-white rounded-2xl border border-slate-100 p-5 md:p-6 shadow-sm hover:shadow-md transition-all">
+                                    <div
+                                        key={rideId || index}
+                                        onClick={() => openRideDetails(ride)}
+                                        className="bg-white rounded-2xl border border-slate-100 p-5 md:p-6 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                                    >
                                         <div className="flex flex-col md:flex-row md:items-center gap-5">
                                             <div className="rounded-xl px-4 py-3 border border-emerald-100 bg-emerald-50/70 min-w-[145px]">
                                                 <p className="text-[11px] font-black tracking-widest text-emerald-700">{timing.day}</p>
@@ -258,7 +267,7 @@ export default function DriverRides() {
                                             <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 items-center">
                                                 <div>
                                                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400">From</p>
-                                                    <h3 className="text-lg font-black text-slate-900 leading-tight">{ride.pickupLocation || ride.route?.start?.name || "—"}</h3>
+                                                    <h3 className="text-lg font-black text-slate-900 leading-tight">{ride.pickupLocation || ride.route?.start?.name || "â€”"}</h3>
                                                 </div>
                                                 <div className="hidden md:flex justify-center">
                                                     <div className="w-16 h-[2px] bg-slate-200 relative">
@@ -269,7 +278,7 @@ export default function DriverRides() {
                                                 </div>
                                                 <div className="md:text-right">
                                                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400">To</p>
-                                                    <h3 className="text-lg font-black text-slate-900 leading-tight">{ride.dropoffLocation || ride.route?.end?.name || "—"}</h3>
+                                                    <h3 className="text-lg font-black text-slate-900 leading-tight">{ride.dropoffLocation || ride.route?.end?.name || "â€”"}</h3>
                                                 </div>
                                             </div>
 
@@ -290,14 +299,20 @@ export default function DriverRides() {
                                             </span>
                                             <div className="flex items-center gap-2">
                                                 <button
-                                                    onClick={() => setSelectedRide(ride)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openRideDetails(ride);
+                                                    }}
                                                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold"
                                                 >
                                                     <Info className="w-3.5 h-3.5" /> Info
                                                 </button>
                                                 {isUpcoming && (
                                                     <button
-                                                        onClick={() => navigate("/driver/create-ride", { state: { rideToEdit: ride } })}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate("/driver/create-ride", { state: { rideToEdit: ride } });
+                                                        }}
                                                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-bold"
                                                     >
                                                         <PencilLine className="w-3.5 h-3.5" /> Edit
@@ -306,7 +321,10 @@ export default function DriverRides() {
                                                 {!["CANCELLED", "COMPLETED"].includes((ride.status || "").toUpperCase()) && (
                                                     <button
                                                         disabled={cancellingId === rideId}
-                                                        onClick={() => handleCancel(rideId)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleCancel(rideId);
+                                                        }}
                                                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold disabled:opacity-50"
                                                     >
                                                         {cancellingId === rideId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
@@ -401,51 +419,6 @@ export default function DriverRides() {
                     </div>
                 </div>
             </div>
-
-            {selectedRide && (
-                <div className="fixed inset-0 bg-slate-900/45 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="w-full max-w-xl rounded-2xl bg-white border border-slate-200 shadow-2xl">
-                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="text-lg font-black text-slate-900">Ride Information</h3>
-                            <button onClick={() => setSelectedRide(null)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <p className="text-xs font-black tracking-wider uppercase text-slate-400">From</p>
-                                <p className="font-bold text-slate-800">{selectedRide.pickupLocation || selectedRide.route?.start?.name || "—"}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-black tracking-wider uppercase text-slate-400">To</p>
-                                <p className="font-bold text-slate-800">{selectedRide.dropoffLocation || selectedRide.route?.end?.name || "—"}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-black tracking-wider uppercase text-slate-400">Departure</p>
-                                <p className="font-bold text-slate-800">{formatRideTiming(selectedRide).date}</p>
-                                <p className="text-slate-500">{formatRideTiming(selectedRide).time}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-black tracking-wider uppercase text-slate-400">Seats</p>
-                                <p className="font-bold text-slate-800">{selectedRide.seatsAvailable ?? selectedRide.seats?.available ?? 0}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-black tracking-wider uppercase text-slate-400">Price / Seat</p>
-                                <p className="font-bold text-slate-800">{`\u20B9`}{getRidePrice(selectedRide).toFixed(2)}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-black tracking-wider uppercase text-slate-400">Status</p>
-                                <p className="font-bold text-slate-800">{selectedRide.status || "OPEN"}</p>
-                            </div>
-                        </div>
-                        <div className="px-6 py-4 border-t border-slate-100 flex justify-end">
-                            <button onClick={() => setSelectedRide(null)} className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold">
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

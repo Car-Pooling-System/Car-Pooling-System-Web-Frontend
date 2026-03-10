@@ -50,7 +50,10 @@ export function useProfile() {
                 } else {
                     // rider
                     const ridesResult = await Promise.allSettled([getRiderRides(userId)]);
-                    const bookings = ridesResult[0].status === "fulfilled" ? ridesResult[0].value : [];
+                    const res = ridesResult[0].status === "fulfilled" ? ridesResult[0].value : { bookings: [], co2Saved: 0 };
+
+                    const bookings = Array.isArray(res) ? res : (res.bookings || []);
+                    const co2Saved = res.co2Saved || 0;
 
                     // Compute stats client-side from bookings
                     const completed = bookings.filter((b) => String(b.status || "").toLowerCase() === "confirmed").length;
@@ -60,6 +63,7 @@ export function useProfile() {
                     setData({
                         role: "rider",
                         bookings,
+                        co2Saved,
                         computed: { completed, cancelled, totalFare },
                     });
                 }

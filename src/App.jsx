@@ -15,6 +15,8 @@ import RiderEditProfile from "./Pages/rider/RiderEditProfile.jsx";
 import DriverEditProfile from "./Pages/driver/DriverEditProfile.jsx";
 import SearchRidesPage from "./Pages/SearchRidesPage.jsx";
 import CreateRidePage from "./Pages/driver/CreateRidePage.jsx";
+import RiderRideDetails from "./Pages/rider/RiderRideDetails.jsx";
+import DriverRideDetails from "./Pages/driver/DriverRideDetails.jsx";
 
 
 // Automatically sets unsafeMetadata.role = "rider" on first sign-in
@@ -68,6 +70,7 @@ export default function App() {
                     element={isDriver ? <CreateRidePage /> : <Navigate to="/my-rides" replace />}
                 />
                 <Route path="/search" element={<SearchRidesPage />} />
+                <Route path="/my-rides/:rideId" element={role === "driver" ? <DriverRideDetails /> : <RiderRideDetails />} />
                 {/* Catch-all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
