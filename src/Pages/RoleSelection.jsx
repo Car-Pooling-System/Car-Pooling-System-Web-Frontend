@@ -74,7 +74,7 @@ export default function RoleSelection() {
                         <Car size={18} color="#0d1f13" strokeWidth={2.5} />
                     </div>
                     <span className="text-2xl font-extrabold" style={{ color: "var(--color-text-primary)" }}>
-                        CarPool
+                        Swiftly
                     </span>
                 </div>
 
@@ -84,7 +84,7 @@ export default function RoleSelection() {
                         className="text-3xl sm:text-4xl font-extrabold mb-3"
                         style={{ color: "var(--color-text-primary)" }}
                     >
-                        How will you use CarPool?
+                        How will you use Swiftly?
                     </h1>
                     <p className="text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
                         Select your role to get started. You can always switch later from your profile.
@@ -198,3 +198,5 @@ export default function RoleSelection() {
         </div>
     );
 }
+
+

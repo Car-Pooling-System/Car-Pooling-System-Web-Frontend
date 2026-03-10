@@ -4,6 +4,7 @@ import {
     getDriverProfile,
     getDriverStats,
     getDriverRating,
+    getDriverRides,
     getDriverVehicles,
     getRiderRides,
 } from "../lib/api.js";
@@ -17,6 +18,7 @@ export function useProfile() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
         if (!isLoaded || !isSignedIn || !user) return;
@@ -51,8 +53,8 @@ export function useProfile() {
                     const bookings = ridesResult[0].status === "fulfilled" ? ridesResult[0].value : [];
 
                     // Compute stats client-side from bookings
-                    const completed = bookings.filter((b) => b.status === "confirmed").length;
-                    const cancelled = bookings.filter((b) => b.status === "cancelled").length;
+                    const completed = bookings.filter((b) => String(b.status || "").toLowerCase() === "confirmed").length;
+                    const cancelled = bookings.filter((b) => String(b.status || "").toLowerCase() === "cancelled").length;
                     const totalFare = bookings.reduce((s, b) => s + (b.farePaid ?? 0), 0);
 
                     setData({
@@ -69,7 +71,13 @@ export function useProfile() {
         }
 
         fetchAll();
-    }, [isLoaded, isSignedIn, user]);
+    }, [isLoaded, isSignedIn, user, refreshKey]);
 
-    return { data, loading, error, role: user?.unsafeMetadata?.role ?? "rider" };
+    return {
+        data,
+        loading,
+        error,
+        role: user?.unsafeMetadata?.role ?? "rider",
+        refresh: () => setRefreshKey((value) => value + 1),
+    };
 }

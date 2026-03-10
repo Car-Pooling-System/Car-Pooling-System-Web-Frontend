@@ -45,7 +45,7 @@ export default function FeaturesSection() {
                         className="text-sm max-w-md mx-auto leading-relaxed"
                         style={{ color: "var(--color-text-secondary)" }}
                     >
-                        CarPool connects you with the best routes, the safest rides, and the most
+                        Swiftly connects you with the best routes, the safest rides, and the most
                         reliable scheduling in the industry.
                     </p>
                 </div>
@@ -89,3 +89,5 @@ export default function FeaturesSection() {
         </section>
     );
 }
+
+

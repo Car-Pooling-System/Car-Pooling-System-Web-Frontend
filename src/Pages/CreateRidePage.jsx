@@ -121,23 +121,24 @@ export function CreateRidePage() {
   useEffect(() => {
     if (!form.userId) return;
     let active = true;
-    setLoadingVehicles(true);
-    setVehicleError("");
 
-    fetchDriverVehicles(form.userId)
-      .then((data) => {
+    const fetchVehicles = async () => {
+      setLoadingVehicles(true);
+      setVehicleError("");
+      try {
+        const data = await fetchDriverVehicles(form.userId);
         if (!active) return;
         setVehicles(data);
         setSelectedVehicleIndex(0);
-      })
-      .catch(() => {
+      } catch {
         if (!active) return;
         setVehicleError("Unable to fetch vehicles for this user ID.");
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoadingVehicles(false);
-      });
+      } finally {
+        if (active) setLoadingVehicles(false);
+      }
+    };
+
+    fetchVehicles();
 
     return () => {
       active = false;
@@ -163,17 +164,17 @@ export function CreateRidePage() {
     setForm((prev) =>
       field === "start"
         ? {
-            ...prev,
-            startLabel: formatted,
-            startLat: String(location.lat()),
-            startLng: String(location.lng()),
-          }
+          ...prev,
+          startLabel: formatted,
+          startLat: String(location.lat()),
+          startLng: String(location.lng()),
+        }
         : {
-            ...prev,
-            endLabel: formatted,
-            endLat: String(location.lat()),
-            endLng: String(location.lng()),
-          },
+          ...prev,
+          endLabel: formatted,
+          endLat: String(location.lat()),
+          endLng: String(location.lng()),
+        },
     );
   };
 

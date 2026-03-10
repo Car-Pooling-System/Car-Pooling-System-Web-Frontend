@@ -17,14 +17,16 @@ import Navbar from "../../components/layout/Navbar.jsx";
 import Footer from "../../components/layout/Footer.jsx";
 import {
     registerDriver,
-    updateDriverProfile,
     uploadDriverDocs,
     addDriverVehicle,
+    uploadFile,
     sendPhoneVerification,
     verifyPhoneOtp,
     updatePhoneOnProfile
 } from "../../lib/api.js";
 import { useProfile } from "../../hooks/useProfile.js";
+import { readFileAsDataUrl, readFilesAsDataUrls } from "../../utils/fileReader.js";
+import FilePickerButton from "../../components/common/FilePickerButton.jsx";
 
 const STEPS = [
     { id: 1, name: "Initial Setup", icon: <ShieldCheck size={18} /> },
@@ -33,13 +35,13 @@ const STEPS = [
     { id: 4, name: "Vehicle Details", icon: <Car size={18} /> },
     { id: 5, name: "Complete", icon: <CheckCircle2 size={18} /> }
 ];
+const MAX_CAR_IMAGES = 5;
 
 export default function DriverRegistrationPage() {
     const { isSignedIn, isLoaded, user } = useUser();
     const navigate = useNavigate();
     const { data: profileData, refresh } = useProfile();
     const [currentStep, setCurrentStep] = useState(1);
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     // Redirect if not signed in
@@ -86,10 +88,10 @@ export default function DriverRegistrationPage() {
                             <div key={step.id} className="flex flex-col items-center gap-2 bg-[var(--color-bg)] px-2">
                                 <div
                                     className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors duration-300 ${isCompleted
-                                            ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-white"
-                                            : isCurrent
-                                                ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-surface)]"
-                                                : "border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-surface)]"
+                                        ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-white"
+                                        : isCurrent
+                                            ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-surface)]"
+                                            : "border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-surface)]"
                                         }`}
                                 >
                                     {isCompleted ? <CheckCircle2 size={20} /> : step.icon}
@@ -184,7 +186,7 @@ function Step2Phone({ userId, onNext, prevStep, setError }) {
         setLoading(true);
         setError(null);
         try {
-            await sendPhoneVerification(phone);
+            await sendPhoneVerification(phone, userId);
             setStep("verify");
         } catch (err) {
             setError(err.message || "Failed to send OTP.");
@@ -199,7 +201,7 @@ function Step2Phone({ userId, onNext, prevStep, setError }) {
         setError(null);
         try {
             // 1. Verify OTP with backend
-            await verifyPhoneOtp(phone, otp);
+            await verifyPhoneOtp(phone, otp, userId);
             // 2. Update profile with verified phone
             await updatePhoneOnProfile(userId, phone);
             onNext();
@@ -275,7 +277,30 @@ function Step2Phone({ userId, onNext, prevStep, setError }) {
 
 function Step3Docs({ userId, onNext, prevStep, setError }) {
     const [docs, setDocs] = useState({ drivingLicense: "", vehicleRegistration: "", insurance: "" });
+    const [docNames, setDocNames] = useState({ drivingLicense: "", vehicleRegistration: "", insurance: "" });
     const [loading, setLoading] = useState(false);
+
+    const handleDocFileChange = async (key, file) => {
+        if (!file) return;
+        setDocNames((prev) => ({ ...prev, [key]: file.name }));
+        try {
+            const dataUrl = await readFileAsDataUrl(file, { maxSizeMB: 6, compressImages: true, maxDimension: 1600, quality: 0.82 });
+            try {
+                const uploadedUrl = await uploadFile({
+                    dataUrl,
+                    filename: file.name,
+                    folder: "driver-docs",
+                });
+                setDocs((prev) => ({ ...prev, [key]: uploadedUrl }));
+            } catch {
+                // Fallback so selection still works if upload endpoint is temporarily unavailable.
+                setDocs((prev) => ({ ...prev, [key]: dataUrl }));
+            }
+            setError(null);
+        } catch (err) {
+            setError(err.message || "Failed to read selected file.");
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -295,14 +320,14 @@ function Step3Docs({ userId, onNext, prevStep, setError }) {
         <div className="max-w-md mx-auto py-4">
             <h2 className="text-xl font-extrabold text-[var(--color-text-primary)] mb-2">Upload Documents</h2>
             <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-                Please provide URL links to your documents. (In a real app, this would be an image upload directly).
+                Select document files directly from your laptop.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
                 {[
-                    { key: "drivingLicense", label: "Driving License URL", icon: <CreditCard size={18} /> },
-                    { key: "vehicleRegistration", label: "Vehicle Registration (RC) URL", icon: <CreditCard size={18} /> },
-                    { key: "insurance", label: "Vehicle Insurance URL", icon: <ShieldCheck size={18} /> }
+                    { key: "drivingLicense", label: "Driving License File", icon: <CreditCard size={18} /> },
+                    { key: "vehicleRegistration", label: "Vehicle Registration (RC) File", icon: <CreditCard size={18} /> },
+                    { key: "insurance", label: "Vehicle Insurance File", icon: <ShieldCheck size={18} /> }
                 ].map((field) => (
                     <div key={field.key}>
                         <label className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">
@@ -310,17 +335,16 @@ function Step3Docs({ userId, onNext, prevStep, setError }) {
                         </label>
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">
-                                {/* eslint-disable-next-line react/jsx-key */}
                                 {field.icon}
                             </span>
-                            <input
-                                required
-                                type="url"
-                                placeholder="https://res.cloudinary.com/..."
-                                className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] text-sm focus:border-[var(--color-primary)] outline-none"
-                                value={docs[field.key]}
-                                onChange={(e) => setDocs({ ...docs, [field.key]: e.target.value })}
-                            />
+                            <div className="pl-8">
+                                <FilePickerButton
+                                    label="Choose File"
+                                    accept="image/*,.pdf"
+                                    onChange={(files) => handleDocFileChange(field.key, files?.[0])}
+                                    fileText={docNames[field.key] ? `Selected: ${docNames[field.key]}` : ""}
+                                />
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -338,9 +362,83 @@ function Step3Docs({ userId, onNext, prevStep, setError }) {
 
 function Step4Vehicle({ userId, onNext, prevStep, setError }) {
     const [vehicle, setVehicle] = useState({
-        brand: "", model: "", year: "", color: "", licensePlate: "", totalSeats: 4
+        brand: "",
+        model: "",
+        year: "",
+        color: "",
+        licensePlate: "",
+        totalSeats: 4,
+        hasLuggageSpace: false,
+        insuranceDoc: "",
+        images: [],
     });
+    const [insuranceDocName, setInsuranceDocName] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const handleVehicleImagesChange = async (files) => {
+        if (!files?.length) return;
+        if (vehicle.images.length >= MAX_CAR_IMAGES) {
+            setError(`You can upload up to ${MAX_CAR_IMAGES} car images.`);
+            return;
+        }
+        try {
+            const allowedCount = Math.max(0, MAX_CAR_IMAGES - vehicle.images.length);
+            const selectedFiles = Array.from(files).slice(0, allowedCount);
+            const imageDataUrls = await readFilesAsDataUrls(selectedFiles, { maxSizeMB: 3, compressImages: true, maxDimension: 1280, quality: 0.78 });
+            const uploadedUrls = await Promise.all(
+                imageDataUrls.map(async (dataUrl, index) => {
+                    try {
+                        return await uploadFile({
+                            dataUrl,
+                            filename: selectedFiles[index]?.name || `vehicle-${index + 1}.jpg`,
+                            folder: "vehicle-images",
+                        });
+                    } catch {
+                        return dataUrl;
+                    }
+                }),
+            );
+            setVehicle((prev) => ({
+                ...prev,
+                images: [...prev.images, ...uploadedUrls],
+            }));
+            if (Array.from(files).length > allowedCount) {
+                setError(`Only ${MAX_CAR_IMAGES} images are allowed. Extra files were ignored.`);
+            } else {
+                setError(null);
+            }
+        } catch (err) {
+            setError(err.message || "Failed to read vehicle images.");
+        }
+    };
+
+    const handleInsuranceDocChange = async (file) => {
+        if (!file) return;
+        setInsuranceDocName(file.name);
+        try {
+            const dataUrl = await readFileAsDataUrl(file, { maxSizeMB: 6, compressImages: true, maxDimension: 1600, quality: 0.82 });
+            try {
+                const uploadedUrl = await uploadFile({
+                    dataUrl,
+                    filename: file.name,
+                    folder: "vehicle-docs",
+                });
+                setVehicle((prev) => ({ ...prev, insuranceDoc: uploadedUrl }));
+            } catch {
+                setVehicle((prev) => ({ ...prev, insuranceDoc: dataUrl }));
+            }
+            setError(null);
+        } catch (err) {
+            setError(err.message || "Failed to read insurance document.");
+        }
+    };
+
+    const removeVehicleImage = (index) => {
+        setVehicle((prev) => ({
+            ...prev,
+            images: prev.images.filter((_, imageIndex) => imageIndex !== index),
+        }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -388,6 +486,50 @@ function Step4Vehicle({ userId, onNext, prevStep, setError }) {
                     <label className="text-sm font-bold text-[var(--color-text-primary)]">Total Passenger Seats</label>
                     <input required type="number" min="1" max="8" className="form-input" value={vehicle.totalSeats} onChange={e => setVehicle({ ...vehicle, totalSeats: Number(e.target.value) })} />
                 </div>
+                <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--color-text-primary)]">Insurance Document File</label>
+                    <FilePickerButton
+                        label="Choose Insurance File"
+                        accept="image/*,.pdf"
+                        onChange={(files) => handleInsuranceDocChange(files?.[0])}
+                        fileText={insuranceDocName ? `Selected: ${insuranceDocName}` : ""}
+                    />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                    <label className="text-sm font-bold text-[var(--color-text-primary)]">Car Images</label>
+                    <FilePickerButton
+                        label="Choose Car Images"
+                        multiple
+                        accept="image/*"
+                        onChange={handleVehicleImagesChange}
+                        fileText={vehicle.images.length ? `${vehicle.images.length}/${MAX_CAR_IMAGES} image(s) selected` : `Max ${MAX_CAR_IMAGES} images`}
+                    />
+                    {vehicle.images.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+                            {vehicle.images.map((image, index) => (
+                                <div key={`${image}-${index}`} className="rounded-xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg)]">
+                                    <img src={image} alt={`Vehicle ${index + 1}`} className="w-full h-24 object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeVehicleImage(index)}
+                                        className="w-full text-xs font-bold py-2 text-[var(--color-danger)]"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <label className="col-span-1 sm:col-span-2 flex items-center gap-3 rounded-xl border border-[var(--color-border)] px-4 py-3 bg-[var(--color-bg)]">
+                    <input
+                        type="checkbox"
+                        checked={vehicle.hasLuggageSpace}
+                        onChange={e => setVehicle({ ...vehicle, hasLuggageSpace: e.target.checked })}
+                        className="h-4 w-4"
+                    />
+                    <span className="text-sm font-bold text-[var(--color-text-primary)]">This vehicle has luggage space</span>
+                </label>
 
                 <div className="col-span-1 sm:col-span-2 flex gap-3 pt-4 border-t border-[var(--color-border)] mt-2">
                     <button type="button" onClick={prevStep} className="btn-secondary px-6">Back</button>

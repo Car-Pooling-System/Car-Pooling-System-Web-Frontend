@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useUser, SignInButton } from "@clerk/clerk-react";
 import { Loader2, ArrowLeft, MapPin, Clock, Calendar, Users, Car, CheckCircle2 } from "lucide-react";
-import Navbar from "../../components/layout/Navbar.jsx";
-import Footer from "../../components/layout/Footer.jsx";
-import { searchRides, bookRide } from "../../lib/api.js";
+import Navbar from "../components/layout/Navbar.jsx";
+import Footer from "../components/layout/Footer.jsx";
+import { searchRides, bookRide } from "../lib/api.js";
 import { GoogleMap, useJsApiLoader, DirectionsRenderer, Marker } from "@react-google-maps/api";
 
 const LIBRARIES = ["places"];
@@ -126,7 +126,12 @@ export default function SearchRidesPage() {
                 navigate("/my-rides");
             }, 3000);
         } catch (err) {
-            alert(err.message || "Failed to book ride");
+            const message = err?.message || "Failed to book ride";
+            if (message.toLowerCase().includes("already booked")) {
+                navigate("/my-rides");
+                return;
+            }
+            alert(message);
         } finally {
             setBooking(false);
         }

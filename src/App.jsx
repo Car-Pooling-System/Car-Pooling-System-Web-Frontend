@@ -1,18 +1,18 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { useEffect } from "react";
-import HomePage from "./pages/HomePage.jsx";
-import SignInPage from "./pages/SignInPage.jsx";
-import ProfilePage from "./pages/ProfilePage.jsx";
-import RiderRides from "./pages/rider/RiderRides.jsx";
-import DriverRides from "./pages/driver/DriverRides.jsx";
-import DriverRegistrationPage from "./pages/driver/DriverRegistrationPage.jsx";
-import MyProfilePage from "./pages/MyProfilePage.jsx";
-import RoleSelection from "./pages/RoleSelection.jsx";
-import RiderEditProfile from "./pages/rider/RiderEditProfile.jsx";
-import DriverEditProfile from "./pages/driver/DriverEditProfile.jsx";
-import SearchRidesPage from "./pages/SearchRidesPage.jsx";
-import CreateRidePage from "./pages/driver/CreateRidePage.jsx";
+import HomePage from "./Pages/HomePage.jsx";
+import SignInPage from "./Pages/SignInPage.jsx";
+import ProfilePage from "./Pages/ProfilePage.jsx";
+import RiderRides from "./Pages/rider/RiderRides.jsx";
+import DriverRides from "./Pages/driver/DriverRides.jsx";
+import DriverRegistrationPage from "./Pages/driver/DriverRegistrationPage.jsx";
+import MyProfilePage from "./Pages/MyProfilePage.jsx";
+import RoleSelection from "./Pages/RoleSelection.jsx";
+import RiderEditProfile from "./Pages/rider/RiderEditProfile.jsx";
+import DriverEditProfile from "./Pages/driver/DriverEditProfile.jsx";
+import SearchRidesPage from "./Pages/SearchRidesPage.jsx";
+import CreateRidePage from "./Pages/driver/CreateRidePage.jsx";
 
 // Automatically sets unsafeMetadata.role = "rider" on first sign-in
 // Now redirects to role selection if no role is set

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Search,
@@ -26,16 +26,14 @@ import Navbar from '../../components/layout/Navbar';
 
 const RiderRides = () => {
     const navigate = useNavigate();
-    const { data, loading, error } = useProfile();
+    const { data, loading } = useProfile();
     const [activeTab, setActiveTab] = useState('upcoming');
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
 
-    const allRides = data?.bookings || [];
-
-    const now = new Date();
-
     const { upcomingRides, pastRides } = useMemo(() => {
+        const allRides = data?.bookings || [];
+        const now = new Date();
         const upcoming = [];
         const past = [];
 
@@ -66,7 +64,7 @@ const RiderRides = () => {
         });
 
         return { upcomingRides: upcoming, pastRides: past };
-    }, [allRides]);
+    }, [data?.bookings]);
 
     const filteredRides = useMemo(() => {
         const source = activeTab === 'upcoming' ? upcomingRides : pastRides;
@@ -140,8 +138,8 @@ const RiderRides = () => {
                                 {tab.icon}
                                 {tab.label}
                                 <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${activeTab === tab.id
-                                        ? 'bg-emerald-100 text-emerald-700'
-                                        : 'bg-slate-100 text-slate-400'
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : 'bg-slate-100 text-slate-400'
                                     }`}>
                                     {tab.count}
                                 </span>
