@@ -12,8 +12,18 @@ export const getDriverStats = (userId) => get(`/api/driver-stats/${userId}`);
 export const getDriverRating = (userId) => get(`/api/driver-rating/${userId}`);
 export const getDriverVehicles = (userId) => get(`/api/driver-vehicles/${userId}`);
 export const getDriverRides = (userId) => get(`/api/driver-rides/${userId}`);
-export const cancelRide = (rideId) => get(`/api/rides/${rideId}/cancel`); // Or post based on backend
+export const cancelRide = (rideId, payload) => post(`/api/rides/${rideId}/cancel`, payload);
 export const createRide = (rideData) => post(`/api/rides`, rideData);
+export const updateRide = async (rideId, rideData) => {
+    try {
+        return await put(`/api/rides/${rideId}`, rideData);
+    } catch (error) {
+        if (String(error?.message || "").startsWith("404")) {
+            return put(`/api/driver-rides/${rideId}`, rideData);
+        }
+        throw error;
+    }
+};
 export const searchRides = (params) => {
     const qs = new URLSearchParams(params).toString();
     return get(`/api/rides/search?${qs}`);
@@ -39,7 +49,16 @@ export const uploadFile = async ({ dataUrl, filename, folder }) => {
 };
 
 // ── Rider ───────────────────────────────────────────────────
-export const getRiderRides = (userId) => get(`/api/rider-rides/${userId}`);
+export const getRiderRides = async (userId) => {
+    try {
+        // Current backend mount: app.use("/api/rider", riderRouter)
+        // and inside rider router: router.use("/rider-rides", ...)
+        return await get(`/api/rider/rider-rides/${userId}`);
+    } catch (error) {
+        // Backward compatibility for older deployments.
+        return get(`/api/rider-rides/${userId}`);
+    }
+};
 export const bookRide = (rideId, bookData) => post(`/api/rides/${rideId}/book`, bookData);
 
 // Helper for POST
