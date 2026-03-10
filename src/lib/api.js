@@ -7,6 +7,7 @@ const RAW_BASE =
     "http://localhost:3000";
 
 const BASE = RAW_BASE.endsWith("/") ? RAW_BASE.slice(0, -1) : RAW_BASE;
+console.log("🧩 API_BASE_URL resolved to:", BASE);
 export const API_URL = BASE;
 
 const api = axios.create({
@@ -49,7 +50,9 @@ export const updateRide = async (rideId, rideData) => {
 
 export const searchRides = (params) => {
     const qs = new URLSearchParams(params).toString();
-    return api.get(`/api/rides/search?${qs}`);
+    const url = `/api/rides/search?${qs}`;
+    console.log("🔍 searchRides calling:", url);
+    return api.get(url);
 };
 
 // ── Registration & Verification ──

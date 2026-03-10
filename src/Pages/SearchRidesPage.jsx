@@ -56,6 +56,7 @@ export default function SearchRidesPage() {
             try {
                 setLoading(true);
                 setError(null);
+                console.log("🚀 Calling searchRides with coordinates:", { lat: qs.pickupLat, lng: qs.pickupLng });
                 const data = await searchRides({
                     pickupLat: qs.pickupLat,
                     pickupLng: qs.pickupLng,
