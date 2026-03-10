@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useProfile } from '../../hooks/useProfile';
 import Navbar from '../../components/layout/Navbar';
+import { calculatePoolingCarbonSavedKg } from '../../utils/poolingCarbon';
 
 const RiderRides = () => {
     const navigate = useNavigate();
@@ -235,7 +236,9 @@ const RiderRides = () => {
                                 )}
                             </div>
                         ) : (
-                            filteredRides.map((ride, index) => (
+                            filteredRides.map((ride, index) => {
+                                const carbonSavedKg = calculatePoolingCarbonSavedKg(ride.ride || ride, { includeCurrentRider: true });
+                                return (
                                 <div key={ride.id || ride.bookingId || index} className={`bg-white rounded-2xl border border-slate-100 p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm hover:shadow-md transition-shadow ${ride.status?.toUpperCase() === 'CANCELLED' ? 'opacity-60' : ''}`}>
                                     <div className="flex flex-col items-center">
                                         <span className="text-lg font-bold text-slate-800">{ride.departureTime?.split(' ')[0] || '--:--'}</span>
@@ -263,6 +266,9 @@ const RiderRides = () => {
                                     <div className="flex flex-col md:items-end min-w-[100px]">
                                         <span className="text-xs font-bold text-slate-400 mb-1">{ride.departureDate}</span>
                                         <span className="text-xl font-black text-slate-900">₹{(ride.totalFare || ride.farePaid || ride.price || 0).toFixed(2)}</span>
+                                        <span className="mt-1 text-[11px] font-bold text-emerald-700">
+                                            Saved {carbonSavedKg} kg CO2
+                                        </span>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${getStatusStyle(ride.status)} uppercase`}>
@@ -284,7 +290,8 @@ const RiderRides = () => {
                                         </div>
                                     </div>
                                 </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 </div>

@@ -76,5 +76,15 @@ export const uploadFile = async ({ dataUrl, filename, folder }) => {
 };
 
 // ── Rider ───────────────────────────────────────────────────
-export const getRiderRides = (userId) => api.get(`/api/rider-rides/${userId}`);
+export const getRiderRides = async (userId) => {
+    try {
+        return await api.get(`/api/rider/rider-rides/${userId}`);
+    } catch (error) {
+        // Backward compatibility for older backend deployments
+        if (String(error?.message || "").includes("404")) {
+            return api.get(`/api/rider-rides/${userId}`);
+        }
+        throw error;
+    }
+};
 export const bookRide = (rideId, bookData) => api.post(`/api/rides/${rideId}/book`, bookData);

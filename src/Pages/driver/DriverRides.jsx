@@ -11,6 +11,7 @@ import {
     Filter,
     History,
     Info,
+    Leaf,
     Loader2,
     MapPin,
     PencilLine,
@@ -25,6 +26,7 @@ import {
 import Navbar from "../../components/layout/Navbar";
 import { useProfile } from "../../hooks/useProfile";
 import { cancelRide } from "../../lib/api";
+import { calculatePoolingCarbonSavedKg } from "../../utils/poolingCarbon";
 
 function getDepartureDate(ride) {
     const depTime = ride?.schedule?.departureTime || ride?.departureDate || ride?.departureTime;
@@ -241,6 +243,7 @@ export default function DriverRides() {
                                 const rideId = ride._id || ride.id;
                                 const timing = formatRideTiming(ride);
                                 const isUpcoming = activeTab === "upcoming" && !["CANCELLED", "COMPLETED"].includes((ride.status || "").toUpperCase());
+                                const carbonSavedKg = calculatePoolingCarbonSavedKg(ride, { includeRequestedPassengers: true });
                                 return (
                                     <div key={rideId || index} className="bg-white rounded-2xl border border-slate-100 p-5 md:p-6 shadow-sm hover:shadow-md transition-all">
                                         <div className="flex flex-col md:flex-row md:items-center gap-5">
@@ -275,6 +278,9 @@ export default function DriverRides() {
                                                     <Users className="w-3 h-3" /> {ride.seatsAvailable ?? ride.seats?.available ?? 0} seats
                                                 </p>
                                                 <p className="text-2xl font-black text-slate-900 mt-1">{`\u20B9`}{getRidePrice(ride).toFixed(2)}</p>
+                                                <p className="text-xs font-bold text-emerald-700 mt-1 inline-flex items-center gap-1 md:justify-end">
+                                                    <Leaf className="w-3 h-3" /> Saved {carbonSavedKg} kg CO2
+                                                </p>
                                             </div>
                                         </div>
 
