@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename)
 
 // https://vite.dev/config/
 export default defineConfig({
+  envPrefix: ['VITE_', 'EXPO_PUBLIC_'],
   plugins: [
     react(),
   ],

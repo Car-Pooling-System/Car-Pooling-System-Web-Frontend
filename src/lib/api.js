@@ -1,35 +1,36 @@
-import axios from 'axios';
+const RAW_BASE =
+    import.meta.env.VITE_BACKEND_URL ||
+    import.meta.env.EXPO_PUBLIC_BACKEND_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    import.meta.env.EXPO_PUBLIC_API_BASE_URL ||
+    "http://localhost:3000";
 
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const BASE = RAW_BASE.endsWith("/") ? RAW_BASE.slice(0, -1) : RAW_BASE;
 
-const api = axios.create({
-    baseURL: BASE,
-    timeout: 10000,
-    headers: { 'Content-Type': 'application/json' },
-    withCredentials: true,
-});
-
-// Add request interceptor for auth token
-api.interceptors.request.use((config) => {
-    // Assuming clerk_token is stored in localStorage as per user instruction
-    // In a real Clerk app, you'd typically use useAuth().getToken()
-    const token = localStorage.getItem('clerk_token');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-});
-
-// Add response interceptor for error handling
-api.interceptors.response.use(
-    (response) => response.data,
-    (error) => {
-        const message = error.response?.data?.message || error.message || "API Error";
-        console.error('API Error:', error.response?.status, message);
-        return Promise.reject(new Error(message));
+function buildUrl(path) {
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    if (BASE.endsWith("/api") && normalizedPath.startsWith("/api/")) {
+        return `${BASE}${normalizedPath.slice(4)}`;
     }
-);
+    return `${BASE}${normalizedPath}`;
+}
 
-export default api;
-export { BASE as API_URL };
+function wrapNetworkError(error) {
+    if (error instanceof TypeError) {
+        return new Error(`Network error: unable to reach backend at ${BASE}`);
+    }
+    return error;
+}
+
+async function get(path) {
+    try {
+        const res = await fetch(buildUrl(path));
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        return res.json();
+    } catch (error) {
+        throw wrapNetworkError(error);
+    }
+}
 
 // ── Driver ──────────────────────────────────────────────────
 export const getDriverProfile = (userId) => api.get(`/api/driver-profile/${userId}`);
@@ -78,18 +79,35 @@ export const uploadFile = async ({ dataUrl, filename, folder }) => {
 };
 
 // ── Rider ───────────────────────────────────────────────────
-export const getRiderRides = async (userId) => {
-    try {
-        // Current backend mount: app.use("/api/rider", riderRouter)
-        // and inside rider router: router.use("/rider-rides", ...)
-        return await api.get(`/api/rider/rider-rides/${userId}`);
-    } catch (error) {
-        // Backward compatibility for older deployments.
-        if (String(error?.message || "").startsWith("404")) {
-            return api.get(`/api/rider-rides/${userId}`);
-        }
-        throw error;
-    }
-};
+export const getRiderRides = (userId) => get(`/api/rider-rides/${userId}`);
+export const bookRide = (rideId, bookData) => post(`/api/rides/${rideId}/book`, bookData);
 
-export const bookRide = (rideId, bookData) => api.post(`/api/rides/${rideId}/book`, bookData);
+// Helper for POST
+async function post(path, body) {
+    try {
+        const res = await fetch(buildUrl(path), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        return res.json();
+    } catch (error) {
+        throw wrapNetworkError(error);
+    }
+}
+
+// Helper for PUT
+async function put(path, body) {
+    try {
+        const res = await fetch(buildUrl(path), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        return res.json();
+    } catch (error) {
+        throw wrapNetworkError(error);
+    }
+}

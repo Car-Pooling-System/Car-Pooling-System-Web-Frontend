@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useUser } from "@clerk/clerk-react";
 import {
     getDriverProfile,
+    getDriverRides,
     getDriverStats,
     getDriverRating,
     getDriverRides,

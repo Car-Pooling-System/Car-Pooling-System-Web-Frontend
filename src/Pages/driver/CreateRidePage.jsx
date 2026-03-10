@@ -11,6 +11,10 @@ import { createRide, updateRide } from "../../lib/api.js";
 const LIBRARIES = ["places"];
 const MAP_CONTAINER_STYLE = { width: "100%", height: "100%", borderRadius: "1rem" };
 const DEFAULT_CENTER = { lat: 28.6139, lng: 77.209 };
+const GOOGLE_MAPS_API_KEY =
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+    import.meta.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
+    "";
 
 function latLngToGrid(lat, lng, size = 0.05) {
     const latIdx = Math.floor(lat / size + 1e-10);
@@ -26,7 +30,7 @@ export default function CreateRidePage() {
     const { data: profileData, loading: profileLoading } = useProfile();
 
     const { isLoaded: mapsLoaded } = useJsApiLoader({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+        googleMapsApiKey: GOOGLE_MAPS_API_KEY,
         libraries: LIBRARIES,
     });
 

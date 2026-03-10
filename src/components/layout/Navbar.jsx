@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useUser, useClerk, SignInButton } from "@clerk/clerk-react";
+import { useUser, useClerk } from "@clerk/clerk-react";
 import {
     User,
     Car,
@@ -8,6 +8,9 @@ import {
     ChevronDown,
     Menu,
     X,
+    Loader2,
+    Search,
+    PlusCircle,
 } from "lucide-react";
 
 export default function Navbar() {
@@ -16,9 +19,11 @@ export default function Navbar() {
     const navigate = useNavigate();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [roleSwitching, setRoleSwitching] = useState(false);
     const dropdownRef = useRef(null);
 
-    // Close dropdown on outside click
+    const currentRole = user?.unsafeMetadata?.role === "driver" ? "driver" : "rider";
+
     useEffect(() => {
         const handler = (e) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -33,6 +38,22 @@ export default function Navbar() {
         await signOut();
         navigate("/");
         setDropdownOpen(false);
+    };
+
+    const handleRoleSwitch = async (nextRole) => {
+        if (!user || roleSwitching || nextRole === currentRole) return;
+
+        setRoleSwitching(true);
+        try {
+            await user.update({ unsafeMetadata: { ...user.unsafeMetadata, role: nextRole } });
+            await user.reload();
+            setDropdownOpen(false);
+            navigate(nextRole === "driver" ? "/driver/create-ride" : "/search");
+        } catch (err) {
+            console.error("Failed to switch role:", err);
+        } finally {
+            setRoleSwitching(false);
+        }
     };
 
     const navLinks = [
@@ -51,7 +72,6 @@ export default function Navbar() {
             className="sticky top-0 z-50 w-full"
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-                {/* Logo */}
                 <Link to="/" className="flex items-center gap-2 shrink-0">
                     <div
                         className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -76,7 +96,6 @@ export default function Navbar() {
                     </span>
                 </Link>
 
-                {/* Desktop nav links */}
                 <div className="hidden md:flex items-center gap-6">
                     {navLinks.map((link) => (
                         <a
@@ -90,7 +109,6 @@ export default function Navbar() {
                     ))}
                 </div>
 
-                {/* Right side */}
                 <div className="flex items-center gap-3">
                     {isSignedIn ? (
                         <div className="relative" ref={dropdownRef}>
@@ -127,16 +145,14 @@ export default function Navbar() {
                                 />
                             </button>
 
-                            {/* Dropdown */}
                             {dropdownOpen && (
                                 <div
-                                    className="absolute right-0 mt-2 w-56 rounded-2xl shadow-lg py-2 z-50"
+                                    className="absolute right-0 mt-2 w-60 rounded-2xl shadow-lg py-2 z-50"
                                     style={{
                                         backgroundColor: "var(--color-surface)",
                                         border: "1px solid var(--color-border)",
                                     }}
                                 >
-                                    {/* User info header */}
                                     <div
                                         className="px-4 py-3 border-b"
                                         style={{ borderColor: "var(--color-border)" }}
@@ -160,11 +176,39 @@ export default function Navbar() {
                                                 color: "var(--color-primary-dark)",
                                             }}
                                         >
-                                            {user.unsafeMetadata?.role === "driver" ? "🚗 Driver" : "🧍 Rider"}
+                                            {currentRole === "driver" ? "Driver" : "Rider"}
                                         </span>
                                     </div>
 
-                                    {/* Menu items */}
+                                    <div
+                                        className="px-4 py-3 border-b"
+                                        style={{ borderColor: "var(--color-border)" }}
+                                    >
+                                        <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
+                                            Switch Role
+                                        </p>
+                                        <div className="mt-2 grid grid-cols-2 gap-2">
+                                            <RoleSwitchButton
+                                                label="Rider"
+                                                selected={currentRole === "rider"}
+                                                disabled={roleSwitching}
+                                                onClick={() => handleRoleSwitch("rider")}
+                                            />
+                                            <RoleSwitchButton
+                                                label="Driver"
+                                                selected={currentRole === "driver"}
+                                                disabled={roleSwitching}
+                                                onClick={() => handleRoleSwitch("driver")}
+                                            />
+                                        </div>
+                                        {roleSwitching && (
+                                            <div className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
+                                                <Loader2 size={12} className="animate-spin" />
+                                                Updating role...
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <DropdownItem
                                         icon={<User size={15} />}
                                         label="My Profile"
@@ -175,6 +219,19 @@ export default function Navbar() {
                                         label="My Rides"
                                         onClick={() => { navigate("/my-rides"); setDropdownOpen(false); }}
                                     />
+                                    {currentRole === "driver" ? (
+                                        <DropdownItem
+                                            icon={<PlusCircle size={15} />}
+                                            label="Create Ride"
+                                            onClick={() => { navigate("/driver/create-ride"); setDropdownOpen(false); }}
+                                        />
+                                    ) : (
+                                        <DropdownItem
+                                            icon={<Search size={15} />}
+                                            label="Search Rides"
+                                            onClick={() => { navigate("/search"); setDropdownOpen(false); }}
+                                        />
+                                    )}
 
                                     <div
                                         className="my-1 border-t"
@@ -192,29 +249,26 @@ export default function Navbar() {
                         </div>
                     ) : (
                         <>
-                            <SignInButton mode="modal">
-                                <button
-                                    className="hidden sm:block text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:opacity-80"
-                                    style={{ color: "var(--color-text-secondary)" }}
-                                >
-                                    Sign In
-                                </button>
-                            </SignInButton>
-                            <SignInButton mode="modal">
-                                <button
-                                    className="text-sm font-bold px-5 py-2 rounded-xl transition-all hover:opacity-90 active:scale-95"
-                                    style={{
-                                        backgroundColor: "var(--color-primary)",
-                                        color: "var(--color-dark)",
-                                    }}
-                                >
-                                    Get App
-                                </button>
-                            </SignInButton>
+                            <Link
+                                to="/sign-in"
+                                className="hidden sm:block text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:opacity-80"
+                                style={{ color: "var(--color-text-secondary)" }}
+                            >
+                                Sign In
+                            </Link>
+                            <Link
+                                to="/sign-up"
+                                className="text-sm font-bold px-5 py-2 rounded-xl transition-all hover:opacity-90 active:scale-95"
+                                style={{
+                                    backgroundColor: "var(--color-primary)",
+                                    color: "var(--color-dark)",
+                                }}
+                            >
+                                Sign Up
+                            </Link>
                         </>
                     )}
 
-                    {/* Mobile hamburger */}
                     <button
                         className="md:hidden p-1"
                         onClick={() => setMobileOpen((v) => !v)}
@@ -225,7 +279,6 @@ export default function Navbar() {
                 </div>
             </div>
 
-            {/* Mobile menu */}
             {mobileOpen && (
                 <div
                     className="md:hidden px-4 pb-4 pt-2 flex flex-col gap-3"
@@ -248,6 +301,23 @@ export default function Navbar() {
                 </div>
             )}
         </nav>
+    );
+}
+
+function RoleSwitchButton({ label, selected, disabled, onClick }) {
+    return (
+        <button
+            onClick={onClick}
+            disabled={disabled || selected}
+            className="px-2 py-1.5 rounded-lg text-xs font-bold border transition-all disabled:opacity-70"
+            style={{
+                backgroundColor: selected ? "var(--color-primary-soft)" : "var(--color-surface)",
+                borderColor: selected ? "var(--color-primary)" : "var(--color-border)",
+                color: selected ? "var(--color-primary-dark)" : "var(--color-text-secondary)",
+            }}
+        >
+            {label}
+        </button>
     );
 }
 
