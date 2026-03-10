@@ -6,6 +6,7 @@ const RAW_BASE =
     "http://localhost:3000";
 
 const BASE = RAW_BASE.endsWith("/") ? RAW_BASE.slice(0, -1) : RAW_BASE;
+export const API_URL = BASE;
 
 function buildUrl(path) {
     const normalizedPath = path.startsWith("/") ? path : `/${path}`;
@@ -31,6 +32,16 @@ async function get(path) {
         throw wrapNetworkError(error);
     }
 }
+
+// Lightweight API client wrapper to keep call sites consistent.
+const api = {
+    get,
+    post,
+    put,
+    delete: del,
+};
+
+export default api;
 
 // ── Driver ──────────────────────────────────────────────────
 export const getDriverProfile = (userId) => api.get(`/api/driver-profile/${userId}`);
@@ -104,6 +115,19 @@ async function put(path, body) {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        return res.json();
+    } catch (error) {
+        throw wrapNetworkError(error);
+    }
+}
+
+// Helper for DELETE
+async function del(path) {
+    try {
+        const res = await fetch(buildUrl(path), {
+            method: "DELETE",
         });
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
         return res.json();

@@ -5,7 +5,6 @@ import {
     getDriverRides,
     getDriverStats,
     getDriverRating,
-    getDriverRides,
     getDriverVehicles,
     getRiderRides,
 } from "../lib/api.js";
