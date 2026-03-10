@@ -89,12 +89,51 @@ const RiderRides = () => {
 
     const getRideDoc = (booking) => booking?.ride || {};
     const getRideId = (booking) => booking?.ride?._id || booking?.rideId || booking?._id;
+    const getDeparture = (booking) => {
+        const rideDoc = getRideDoc(booking);
+        const raw =
+            rideDoc?.schedule?.departureTime ||
+            booking?.departureTime ||
+            booking?.departureDate ||
+            null;
+        if (!raw) return null;
+        const dt = new Date(raw);
+        return Number.isNaN(dt.getTime()) ? null : dt;
+    };
+    const getDepartureDateLabel = (booking) => {
+        const dt = getDeparture(booking);
+        return dt ? dt.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----";
+    };
+    const getDepartureTimeLabel = (booking) => {
+        const dt = getDeparture(booking);
+        return dt ? dt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }) : "--:--";
+    };
+    const getPickupName = (booking) =>
+        booking?.pickupLocation ||
+        booking?.pickupName ||
+        booking?.source ||
+        getRideDoc(booking)?.route?.start?.name ||
+        "Pickup not available";
+    const getDropName = (booking) =>
+        booking?.dropoffLocation ||
+        booking?.dropName ||
+        booking?.destination ||
+        getRideDoc(booking)?.route?.end?.name ||
+        "Drop not available";
+    const getFare = (booking) =>
+        Number(
+            booking?.totalFare ??
+            booking?.farePaid ??
+            booking?.price ??
+            getRideDoc(booking)?.pricing?.baseFare ??
+            0,
+        );
     const canLeaveBooking = (booking) => {
         const status = String(booking?.status || "").toUpperCase();
         if (status === "CANCELLED" || status === "COMPLETED") return false;
-        const departure = getRideDoc(booking)?.schedule?.departureTime || booking?.departureDate;
+        const departure = getDeparture(booking);
         if (!departure) return true;
-        return new Date(departure) >= new Date();
+        return departure >= new Date();
     };
 
     const openRideDetails = (booking) => {
@@ -127,6 +166,7 @@ const RiderRides = () => {
         switch (status?.toUpperCase()) {
             case 'CONFIRMED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
             case 'PENDING': return 'bg-amber-100 text-amber-700 border-amber-200';
+            case 'REQUESTED': return 'bg-amber-100 text-amber-700 border-amber-200';
             case 'COMPLETED': return 'bg-slate-100 text-slate-600 border-slate-200';
             case 'CANCELLED': return 'bg-rose-100 text-rose-700 border-rose-200';
             default: return 'bg-gray-100 text-gray-600';
@@ -137,6 +177,7 @@ const RiderRides = () => {
         switch (status?.toUpperCase()) {
             case 'CONFIRMED': return <CheckCircle className="w-5 h-5 text-emerald-500" />;
             case 'PENDING': return <PendingIcon className="w-5 h-5 text-amber-500" />;
+            case 'REQUESTED': return <PendingIcon className="w-5 h-5 text-amber-500" />;
             case 'COMPLETED': return <CheckCircle className="w-5 h-5 text-slate-400" />;
             case 'CANCELLED': return <XCircle className="w-5 h-5 text-rose-500" />;
             default: return null;
@@ -216,6 +257,7 @@ const RiderRides = () => {
                                 >
                                     <option value="all">All Statuses</option>
                                     <option value="CONFIRMED">Confirmed</option>
+                                    <option value="REQUESTED">Requested</option>
                                     <option value="PENDING">Pending</option>
                                     <option value="COMPLETED">Completed</option>
                                     <option value="CANCELLED">Cancelled</option>
@@ -283,12 +325,12 @@ const RiderRides = () => {
                                 >
                                     <div className="flex flex-col md:flex-row items-center gap-6">
                                         <div className="flex flex-col items-center">
-                                            <span className="text-lg font-bold text-slate-800">{ride.departureTime?.split(' ')[0] || '--:--'}</span>
-                                            <span className="text-xs font-semibold text-slate-400 uppercase tracking-tighter">{ride.departureTime?.split(' ')[1] || ''}</span>
+                                            <span className="text-lg font-bold text-slate-800">{getDepartureTimeLabel(ride)}</span>
+                                            <span className="text-xs font-semibold text-slate-400 uppercase tracking-tighter">{getDepartureDateLabel(ride)}</span>
                                         </div>
                                         <div className="flex flex-col flex-1 min-w-[120px]">
                                             <h3 className="text-lg font-black text-slate-900 leading-tight">
-                                                {ride.pickupLocation || ride.source || ride.ride?.route?.start?.name || '—'}
+                                                {getPickupName(ride)}
                                             </h3>
                                             <p className="text-xs text-slate-400 font-medium">{ride.pickupAddress || ride.sourceDetails || ''}</p>
                                         </div>
@@ -301,13 +343,13 @@ const RiderRides = () => {
                                         </div>
                                         <div className="flex flex-col flex-1 min-w-[120px] md:text-right">
                                             <h3 className="text-lg font-black text-slate-900 leading-tight">
-                                                {ride.dropoffLocation || ride.destination || ride.ride?.route?.end?.name || '—'}
+                                                {getDropName(ride)}
                                             </h3>
                                             <p className="text-xs text-slate-400 font-medium">{ride.dropoffAddress || ride.destinationDetails || ''}</p>
                                         </div>
                                         <div className="flex flex-col md:items-end min-w-[100px]">
-                                            <span className="text-xs font-bold text-slate-400 mb-1">{ride.departureDate}</span>
-                                            <span className="text-xl font-black text-slate-900">₹{(ride.totalFare || ride.farePaid || ride.price || 0).toFixed(2)}</span>
+                                            <span className="text-xs font-bold text-slate-400 mb-1">{getDepartureDateLabel(ride)}</span>
+                                            <span className="text-xl font-black text-slate-900">₹{getFare(ride).toFixed(2)}</span>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${getStatusStyle(ride.status)} uppercase`}>
