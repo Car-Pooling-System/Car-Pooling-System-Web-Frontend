@@ -5,7 +5,6 @@ import { MapPin, Calendar as CalendarIcon, Users, Search, Loader2, Clock, X, Plu
 import { format } from "date-fns";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
-import { useUser } from "@clerk/clerk-react";
 
 const LIBRARIES = ["places"];
 const MAP_CONTAINER_STYLE = { width: "100%", height: "100%" };
@@ -25,7 +24,6 @@ const MAP_STYLES = [
 ];
 
 export default function HeroSection() {
-    const { isSignedIn } = useUser();
     const navigate = useNavigate();
 
     const { isLoaded } = useJsApiLoader({
@@ -42,6 +40,7 @@ export default function HeroSection() {
     const [searching, setSearching] = useState(false);
     const [routeInfo, setRouteInfo] = useState(null);
     const [showCalendar, setShowCalendar] = useState(false);
+    const [searchError, setSearchError] = useState("");
 
 
     const pickupRef = useRef(null);
@@ -94,14 +93,10 @@ export default function HeroSection() {
         setMapCenter(DEFAULT_CENTER);
         setDate(null);
         setPassengers(1);
-        if (pickupRef.current) {
-            const input = document.querySelector('input[placeholder="Your current address"]');
-            if (input) input.value = '';
-        }
-        if (dropRef.current) {
-            const input = document.querySelector('input[placeholder="Where to?"]');
-            if (input) input.value = '';
-        }
+        setShowCalendar(false);
+        setSearchError("");
+        if (pickupInputRef.current) pickupInputRef.current.value = "";
+        if (dropInputRef.current) dropInputRef.current.value = "";
     };
 
     const drawRoute = useCallback(() => {
@@ -133,24 +128,26 @@ export default function HeroSection() {
     }, [pickupPlace, dropPlace, drawRoute]);
 
     const handleSearch = async () => {
-        if (!pickupPlace || !dropPlace) return;
-        if (!isSignedIn) return;
+        if (!pickupPlace || !dropPlace) {
+            setSearchError("Please select both pickup and destination.");
+            return;
+        }
+        setSearchError("");
 
         setSearching(true);
         drawRoute();
-
-        setTimeout(() => {
-            const params = new URLSearchParams({
-                pickupLat: pickupPlace.lat,
-                pickupLng: pickupPlace.lng,
-                dropLat: dropPlace.lat,
-                dropLng: dropPlace.lng,
-                passengers,
-                ...(date && { date: format(date, "yyyy-MM-dd") }),
-            });
-            navigate(`/search?${params.toString()}`);
-            setSearching(false);
-        }, 2000);
+        const params = new URLSearchParams({
+            pickupLat: String(pickupPlace.lat),
+            pickupLng: String(pickupPlace.lng),
+            dropLat: String(dropPlace.lat),
+            dropLng: String(dropPlace.lng),
+            pickupName: pickupPlace.name || "",
+            dropName: dropPlace.name || "",
+            passengers: String(passengers),
+            ...(date && { date: format(date, "yyyy-MM-dd") }),
+        });
+        navigate(`/search?${params.toString()}`);
+        setSearching(false);
     };
 
 
@@ -329,35 +326,24 @@ export default function HeroSection() {
                             </div>
 
                             {/* Search button */}
-                            {isSignedIn ? (
-                                <button
-                                    onClick={handleSearch}
-                                    disabled={!pickupPlace || !dropPlace || searching}
-                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    style={{
-                                        backgroundColor: "var(--color-primary)",
-                                        color: "var(--color-dark)",
-                                    }}
-                                >
-                                    {searching ? (
-                                        <Loader2 size={16} className="animate-spin" />
-                                    ) : (
-                                        <Search size={16} />
-                                    )}
-                                    Find Ride
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => navigate("/sign-in")}
-                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
-                                    style={{
-                                        backgroundColor: "var(--color-primary)",
-                                        color: "var(--color-dark)",
-                                    }}
-                                >
+                            <button
+                                onClick={handleSearch}
+                                disabled={searching}
+                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{
+                                    backgroundColor: "var(--color-primary)",
+                                    color: "var(--color-dark)",
+                                }}
+                            >
+                                {searching ? (
+                                    <Loader2 size={16} className="animate-spin" />
+                                ) : (
                                     <Search size={16} />
-                                    Find Ride
-                                </button>
+                                )}
+                                Find Ride
+                            </button>
+                            {searchError && (
+                                <p className="text-xs font-semibold text-rose-500">{searchError}</p>
                             )}
                         </div>
                     </div>
