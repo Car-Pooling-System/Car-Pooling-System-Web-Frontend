@@ -258,37 +258,41 @@ export default function RiderRideDetails() {
     const departure = ride?.schedule?.departureTime ? new Date(ride.schedule.departureTime) : null;
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-emerald-50/30">
+        <div className="min-h-screen bg-gradient-to-b from-slate-100 via-white to-emerald-50/40">
             <Navbar />
-            <main className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <section className="lg:col-span-2 space-y-6">
-                    <div className="flex items-center justify-between">
+            <main className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-7">
+                <section className="lg:col-span-2 space-y-7">
+                    <div className="rounded-3xl border border-emerald-100 bg-white/90 backdrop-blur-sm px-5 py-4 shadow-[0_12px_32px_-24px_rgba(16,185,129,0.8)] flex flex-wrap items-center justify-between gap-3">
                         <button
                             onClick={() => navigate("/my-rides")}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow transition-all"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 shadow-sm hover:border-slate-300 transition-all"
                         >
                             <ArrowLeft className="w-4 h-4" />
                             Back to My Rides
                         </button>
+                        <div className="text-right">
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-600">Trip Overview</p>
+                            <p className="text-sm font-semibold text-slate-500">Booking #{String(rideId).slice(-8)}</p>
+                        </div>
                     </div>
 
-                    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.45)]">
+                        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
                             <h1 className="text-2xl font-black text-slate-900">Ride Details</h1>
                             <span className="px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase bg-emerald-100 text-emerald-700 border border-emerald-200">
                                 {String(riderBookingStatus || "requested")}
                             </span>
                         </div>
                         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 p-4">
+                            <div className="rounded-2xl bg-gradient-to-br from-emerald-50 via-white to-emerald-50/40 border border-emerald-100 p-4">
                                 <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Distance</p>
                                 <p className="text-lg font-bold text-slate-900 mt-1">{distanceKm ? `${Number(distanceKm).toFixed(1)} km` : "-"}</p>
                             </div>
-                            <div className="rounded-2xl bg-gradient-to-br from-cyan-50 to-white border border-cyan-100 p-4">
+                            <div className="rounded-2xl bg-gradient-to-br from-cyan-50 via-white to-cyan-50/40 border border-cyan-100 p-4">
                                 <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Time</p>
                                 <p className="text-lg font-bold text-slate-900 mt-1">{durationMins ? `${durationMins} min` : "-"}</p>
                             </div>
-                            <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-white border border-amber-100 p-4">
+                            <div className="rounded-2xl bg-gradient-to-br from-amber-50 via-white to-amber-50/30 border border-amber-100 p-4">
                                 <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Fare</p>
                                 <p className="text-lg font-bold text-slate-900 mt-1">Rs {Number(fare).toFixed(2)}</p>
                             </div>
@@ -318,16 +322,16 @@ export default function RiderRideDetails() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+                    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.45)]">
                         <h2 className="text-lg font-black text-slate-900">Driver</h2>
                         <div className="mt-4 flex items-start gap-4">
                             <img
                                 src={ride?.driver?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(ride?.driver?.name || "D")}&background=10b981&color=fff`}
                                 alt="Driver"
-                                className="w-14 h-14 rounded-2xl object-cover border border-slate-200 shadow-sm"
+                                className="w-16 h-16 rounded-2xl object-cover border border-slate-200 shadow-sm"
                             />
                             <div className="flex-1">
-                                <p className="font-bold text-slate-900">{ride?.driver?.name || "Driver"}</p>
+                                <p className="text-xl font-black text-slate-900">{ride?.driver?.name || "Driver"}</p>
                                 <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
                                     <span className={`px-2 py-1 rounded-full border font-bold ${isVerified ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}>
                                         {isVerified ? "Verified Driver" : "Verification Pending"}
@@ -362,7 +366,7 @@ export default function RiderRideDetails() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+                    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.45)]">
                         <h2 className="text-lg font-black text-slate-900">Vehicle & Preferences</h2>
                         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/60">
@@ -392,7 +396,7 @@ export default function RiderRideDetails() {
                     </div>
                 </section>
 
-                <aside className="bg-white rounded-3xl border border-slate-200 p-5 h-fit lg:sticky lg:top-24 shadow-sm">
+                <aside className="bg-white rounded-3xl border border-slate-200 p-5 h-fit lg:sticky lg:top-24 shadow-[0_18px_45px_-30px_rgba(2,6,23,0.45)]">
                     <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
                         <MessageCircle className="w-5 h-5 text-emerald-500" />
                         Chat with Driver
@@ -405,7 +409,7 @@ export default function RiderRideDetails() {
                         </div>
                     ) : (
                         <>
-                            <div className="mt-4 h-80 overflow-y-auto border border-slate-200 rounded-2xl p-3 bg-gradient-to-b from-slate-50 to-white">
+                            <div className="mt-4 h-80 overflow-y-auto border border-slate-200 rounded-2xl p-3 bg-gradient-to-b from-slate-50 via-white to-emerald-50/20">
                                 {chatLoading ? (
                                     <div className="h-full flex items-center justify-center">
                                         <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
@@ -441,7 +445,7 @@ export default function RiderRideDetails() {
                                         if (e.key === "Enter") handleSend();
                                     }}
                                     placeholder="Type a message..."
-                                    className="flex-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                                    className="flex-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400"
                                 />
                                 <button
                                     onClick={handleSend}
