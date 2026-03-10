@@ -43,6 +43,9 @@ export default function HeroSection() {
     const pickupRef = useRef(null);
     const dropRef = useRef(null);
     const mapRef = useRef(null);
+    const pickupInputRef = useRef(null);
+    const dropInputRef = useRef(null);
+    const dateTriggerRef = useRef(null);
 
     const onPickupLoad = (autocomplete) => { pickupRef.current = autocomplete; };
     const onDropLoad = (autocomplete) => { dropRef.current = autocomplete; };
@@ -57,6 +60,9 @@ export default function HeroSection() {
                 lng: place.geometry.location.lng(),
             });
             setMapCenter({ lat: place.geometry.location.lat(), lng: place.geometry.location.lng() });
+            window.setTimeout(() => {
+                dropInputRef.current?.focus();
+            }, 0);
         }
     };
 
@@ -69,6 +75,10 @@ export default function HeroSection() {
                 lat: place.geometry.location.lat(),
                 lng: place.geometry.location.lng(),
             });
+            setShowCalendar(true);
+            window.setTimeout(() => {
+                dateTriggerRef.current?.focus();
+            }, 0);
         }
     };
 
@@ -194,6 +204,7 @@ export default function HeroSection() {
                                             style={{ border: "1px solid var(--color-border)", backgroundColor: "var(--color-surface-muted)" }}>
                                             <MapPin size={15} style={{ color: "var(--color-primary)", flexShrink: 0 }} />
                                             <input
+                                                ref={pickupInputRef}
                                                 type="text"
                                                 placeholder="Your current address"
                                                 className="flex-1 bg-transparent text-sm outline-none"
@@ -220,6 +231,7 @@ export default function HeroSection() {
                                             style={{ border: "1px solid var(--color-border)", backgroundColor: "var(--color-surface-muted)" }}>
                                             <MapPin size={15} style={{ color: "#ef4444", flexShrink: 0 }} />
                                             <input
+                                                ref={dropInputRef}
                                                 type="text"
                                                 placeholder="Where to?"
                                                 className="flex-1 bg-transparent text-sm outline-none"
@@ -242,7 +254,9 @@ export default function HeroSection() {
                                     >
                                         Date
                                     </label>
-                                    <div
+                                    <button
+                                        ref={dateTriggerRef}
+                                        type="button"
                                         onClick={() => setShowCalendar(!showCalendar)}
                                         className="flex items-center gap-2 rounded-xl px-3 py-2.5 cursor-pointer transition-colors hover:border-primary"
                                         style={{ border: "1px solid var(--color-border)", backgroundColor: "var(--color-surface-muted)" }}
@@ -251,7 +265,7 @@ export default function HeroSection() {
                                         <span className="text-sm" style={{ color: date ? "var(--color-text-primary)" : "var(--color-text-muted)" }}>
                                             {date ? format(date, "PP") : "Select Date"}
                                         </span>
-                                    </div>
+                                    </button>
 
                                     {showCalendar && (
                                         <div className="absolute top-full left-0 mt-2 z-50 bg-white shadow-2xl rounded-2xl p-4 border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
