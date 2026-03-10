@@ -29,7 +29,7 @@ const REVIEWS = [
         role: "Adventure Blogger",
         avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=faces",
         rating: 5,
-        text: "I've tried many apps, but CarPool's tracking and safety features give me true peace of mind when traveling alone.",
+        text: "I've tried many apps, but Swiftly's tracking and safety features give me true peace of mind when traveling alone.",
         route: "Mumbai → Pune",
         date: "Feb 20, 2026",
     },
@@ -213,3 +213,5 @@ function ReviewCard({ review }) {
         </div>
     );
 }
+
+
