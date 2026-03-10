@@ -63,7 +63,7 @@ export default function Navbar() {
                         className="text-lg font-extrabold tracking-tight"
                         style={{ color: "var(--color-text-primary)" }}
                     >
-                        CarPool
+                        Swiftly
                     </span>
                     <span
                         className="text-xs font-semibold px-1.5 py-0.5 rounded"
@@ -72,7 +72,7 @@ export default function Navbar() {
                             color: "var(--color-primary-dark)",
                         }}
                     >
-                        AI
+                        Everywhere
                     </span>
                 </Link>
 
@@ -276,3 +276,4 @@ function DropdownItem({ icon, label, onClick, danger = false }) {
         </button>
     );
 }
+
