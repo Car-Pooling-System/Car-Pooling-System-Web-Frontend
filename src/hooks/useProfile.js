@@ -53,8 +53,8 @@ export function useProfile() {
                     const bookings = ridesResult[0].status === "fulfilled" ? ridesResult[0].value : [];
 
                     // Compute stats client-side from bookings
-                    const completed = bookings.filter((b) => b.status === "confirmed").length;
-                    const cancelled = bookings.filter((b) => b.status === "cancelled").length;
+                    const completed = bookings.filter((b) => String(b.status || "").toLowerCase() === "confirmed").length;
+                    const cancelled = bookings.filter((b) => String(b.status || "").toLowerCase() === "cancelled").length;
                     const totalFare = bookings.reduce((s, b) => s + (b.farePaid ?? 0), 0);
 
                     setData({
