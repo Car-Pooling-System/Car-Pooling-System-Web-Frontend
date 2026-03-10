@@ -1,10 +1,9 @@
 import axios from 'axios';
 
 const RAW_BASE =
+    import.meta.env.VITE_API_URL ||
     import.meta.env.VITE_BACKEND_URL ||
-    import.meta.env.EXPO_PUBLIC_BACKEND_URL ||
     import.meta.env.VITE_API_BASE_URL ||
-    import.meta.env.EXPO_PUBLIC_API_BASE_URL ||
     "http://localhost:3000";
 
 const BASE = RAW_BASE.endsWith("/") ? RAW_BASE.slice(0, -1) : RAW_BASE;
