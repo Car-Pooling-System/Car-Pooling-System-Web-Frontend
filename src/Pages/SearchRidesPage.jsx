@@ -126,7 +126,12 @@ export default function SearchRidesPage() {
                 navigate("/my-rides");
             }, 3000);
         } catch (err) {
-            alert(err.message || "Failed to book ride");
+            const message = err?.message || "Failed to book ride";
+            if (message.toLowerCase().includes("already booked")) {
+                navigate("/my-rides");
+                return;
+            }
+            alert(message);
         } finally {
             setBooking(false);
         }
