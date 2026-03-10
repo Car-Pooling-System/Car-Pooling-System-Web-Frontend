@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { GoogleMap, useJsApiLoader, Autocomplete, DirectionsRenderer } from "@react-google-maps/api";
-import { MapPin, Calendar, Clock, Car, Users, DollarSign, Settings, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { MapPin, CalendarDays, Clock3, Car, Settings, Loader2, ArrowLeft } from "lucide-react";
 import Navbar from "../../components/layout/Navbar.jsx";
 import Footer from "../../components/layout/Footer.jsx";
 import { useProfile } from "../../hooks/useProfile.js";
@@ -303,31 +303,50 @@ export default function CreateRidePage() {
                         <hr className="border-slate-100" />
 
                         {/* Date & Time */}
-                        <div>
-                            <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2"><Clock className="w-4 h-4 text-emerald-500" /> Schedule</h2>
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-white to-cyan-50/60 p-4 sm:p-5">
+                            <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <Clock3 className="w-4 h-4 text-emerald-600" />
+                                Schedule
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 block">Departure Date</label>
-                                    <div className="relative">
-                                        <Calendar className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none" />
-                                        <input required type="date" min={new Date().toISOString().split('T')[0]} value={date} onChange={e => setDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-emerald-500 transition-colors" />
-                                    </div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <CalendarDays className="w-3.5 h-3.5 text-emerald-600" />
+                                        Departure Date
+                                    </label>
+                                    <input
+                                        required
+                                        type="date"
+                                        min={new Date().toISOString().split('T')[0]}
+                                        value={date}
+                                        onChange={e => setDate(e.target.value)}
+                                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 block">Departure Time</label>
-                                    <div className="relative">
-                                        <Clock className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-                                        <input required type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-emerald-500 transition-colors" />
-                                    </div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <Clock3 className="w-3.5 h-3.5 text-cyan-600" />
+                                        Departure Time
+                                    </label>
+                                    <input
+                                        required
+                                        type="time"
+                                        value={time}
+                                        onChange={e => setTime(e.target.value)}
+                                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all"
+                                    />
                                 </div>
                             </div>
-                            <div className="mt-3 flex flex-wrap gap-2">
+                            <div className="mt-4 flex flex-wrap gap-2">
                                 {["07:00", "09:00", "12:00", "18:00", "21:00"].map((slot) => (
                                     <button
                                         key={slot}
                                         type="button"
                                         onClick={() => setTime(slot)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${time === slot ? "bg-emerald-500 text-white border-emerald-500" : "bg-slate-50 text-slate-600 border-slate-200 hover:border-emerald-400"}`}
+                                        className={`px-3.5 py-2 rounded-xl text-xs font-black border transition-all ${time === slot
+                                            ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                                            : "bg-white text-slate-600 border-slate-200 hover:border-emerald-400 hover:text-emerald-700"
+                                            }`}
                                     >
                                         {slot}
                                     </button>
