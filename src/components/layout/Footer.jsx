@@ -27,7 +27,7 @@ export default function Footer() {
                                 <Car size={16} color="#0d1f13" strokeWidth={2.5} />
                             </div>
                             <span className="text-base font-extrabold" style={{ color: "var(--color-text-primary)" }}>
-                                CarPool
+                                Swiftly
                             </span>
                         </div>
                         <p className="text-xs leading-relaxed max-w-[200px]" style={{ color: "var(--color-text-secondary)" }}>
@@ -62,9 +62,11 @@ export default function Footer() {
                     className="border-t pt-6 text-center text-xs"
                     style={{ borderColor: "var(--color-border)", color: "var(--color-text-muted)" }}
                 >
-                    Â© 2026 CarPool. All rights reserved.
+                    © 2026 Swiftly. All rights reserved.
                 </div>
             </div>
         </footer>
     );
 }
+
+
