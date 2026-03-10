@@ -158,7 +158,10 @@ export default function HeroSection() {
     return (
         <section
             id="hero"
-            style={{ backgroundColor: "var(--color-bg)" }}
+            style={{
+                backgroundColor: "var(--color-bg)",
+                backgroundImage: "none",
+            }}
             className="w-full"
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-20">
@@ -176,15 +179,15 @@ export default function HeroSection() {
                             className="text-4xl md:text-5xl font-extrabold leading-tight mb-3"
                             style={{ color: "var(--color-text-primary)" }}
                         >
-                            Book Your
+                            Lets travel
                             <br />
-                            <span style={{ color: "var(--color-primary)" }}>Ride</span>
+                            <span style={{ color: "var(--color-primary)" }}>together.</span>
                         </h1>
                         <p
                             className="text-sm mb-8"
                             style={{ color: "var(--color-text-secondary)" }}
                         >
-                            Real-time AI assistance for every mile.
+                            Connect with drivers heading your way. Save money, and make new friends on the road.
                         </p>
 
                         <div

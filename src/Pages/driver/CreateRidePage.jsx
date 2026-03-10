@@ -16,6 +16,12 @@ const GOOGLE_MAPS_API_KEY =
     import.meta.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
     "";
 
+function normalizeMoney(value) {
+    const parsed = Number.parseFloat(value);
+    if (!Number.isFinite(parsed)) return 0;
+    return Math.round((parsed + Number.EPSILON) * 100) / 100;
+}
+
 function latLngToGrid(lat, lng, size = 0.05) {
     const latIdx = Math.floor(lat / size + 1e-10);
     const lngIdx = Math.floor(lng / size + 1e-10);
@@ -155,6 +161,9 @@ export default function CreateRidePage() {
             return;
         }
 
+        const normalizedBaseFare = normalizeMoney(baseFare);
+        const normalizedPricePerKm = normalizeMoney(pricePerKm);
+
         try {
             setSubmitting(true);
 
@@ -191,8 +200,8 @@ export default function CreateRidePage() {
                     departureTime
                 },
                 pricing: {
-                    baseFare: Number(baseFare),
-                    pricePerKm: Number(pricePerKm)
+                    baseFare: normalizedBaseFare,
+                    pricePerKm: normalizedPricePerKm
                 },
                 seats: {
                     total: Number(seats),
@@ -223,7 +232,7 @@ export default function CreateRidePage() {
         return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="w-8 h-8 text-emerald-500 animate-spin" /></div>;
     }
 
-    const estimatedFare = routeDetails ? Number(baseFare || 0) + (routeDetails.distanceKm * Number(pricePerKm || 0)) : 0;
+    const estimatedFare = routeDetails ? normalizeMoney(baseFare) + (routeDetails.distanceKm * normalizeMoney(pricePerKm)) : 0;
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -346,15 +355,15 @@ export default function CreateRidePage() {
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 block">Available Seats</label>
-                                    <input required type="number" min="1" max="8" value={seats} onChange={e => setSeats(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-emerald-500 transition-colors" />
+                                    <input required type="number" min="1" max="8" step="1" value={seats} onChange={e => setSeats(e.target.value)} onWheel={(e) => e.currentTarget.blur()} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-emerald-500 transition-colors" />
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 block">Base Fare (₹)</label>
-                                    <input required type="number" min="0" placeholder="e.g. 500" value={baseFare} onChange={e => setBaseFare(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-emerald-500 transition-colors" />
+                                    <input required type="number" min="0" step="0.01" placeholder="e.g. 500" value={baseFare} onChange={e => setBaseFare(e.target.value)} onBlur={(e) => setBaseFare(String(normalizeMoney(e.target.value)))} onWheel={(e) => e.currentTarget.blur()} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-emerald-500 transition-colors" />
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 block">Per KM ({`\u20B9`})</label>
-                                    <input required type="number" min="0" step="0.1" placeholder="e.g. 10" value={pricePerKm} onChange={e => setPricePerKm(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-emerald-500 transition-colors" />
+                                    <input required type="number" min="0" step="0.01" placeholder="e.g. 10" value={pricePerKm} onChange={e => setPricePerKm(e.target.value)} onBlur={(e) => setPricePerKm(String(normalizeMoney(e.target.value)))} onWheel={(e) => e.currentTarget.blur()} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-emerald-500 transition-colors" />
                                 </div>
                             </div>
                         </div>

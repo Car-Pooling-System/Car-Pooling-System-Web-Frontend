@@ -177,8 +177,16 @@ export function DriverBody({ data, user }) {
                     <StatCard icon={<Route size={18} />} label="Km Driven" value={`${(stats?.distanceDrivenKm ?? profile?.distanceDrivenKm ?? 0).toFixed(0)} km`} />
                     <StatCard icon={<Banknote size={18} />} label="Total Earnings" value={`₹${(profile?.earnings?.total ?? 0).toLocaleString()}`} />
                     <StatCard icon={<Star size={18} />} label="Cancelled" value={stats?.rides?.cancelled ?? profile?.rides?.cancelled ?? 0} />
+                    <StatCard
+                        icon={<Star size={18} className="text-emerald-500" />}
+                        label="CO2 Saved"
+                        value={`${(data?.profile?.co2Saved ?? 0).toFixed(1)} kg`}
+                    />
                 </div>
             </Section>
+
+            {/* Impact Section */}
+            <ImpactSection co2={data?.profile?.co2Saved ?? 0} />
 
             {/* Vehicles */}
             <Section title={`Vehicles (${vehicles.length})`}>
@@ -237,8 +245,16 @@ export function RiderBody({ data }) {
                     <StatCard icon={<ShieldCheck size={18} />} label="Rides Completed" value={computed.completed} />
                     <StatCard icon={<AlertCircle size={18} />} label="Rides Cancelled" value={computed.cancelled} />
                     <StatCard icon={<Banknote size={18} />} label="Total Spent" value={`₹${computed.totalFare.toLocaleString()}`} />
+                    <StatCard
+                        icon={<Star size={18} className="text-emerald-500" />}
+                        label="CO2 Saved"
+                        value={`${(data?.co2Saved ?? 0).toFixed(1)} kg`}
+                    />
                 </div>
             </Section>
+
+            {/* Impact Section */}
+            <ImpactSection co2={data?.co2Saved ?? 0} />
 
             {/* Bookings list */}
             <Section title={`My Bookings (${bookings.length})`}>
@@ -457,6 +473,40 @@ function ErrorBanner({ message }) {
             <p className="text-sm font-semibold" style={{ color: "var(--color-danger)" }}>
                 {message}
             </p>
+        </div>
+    );
+}
+
+function ImpactSection({ co2 }) {
+    const trees = (co2 / 21).toFixed(1); // Avg tree absorbs ~21kg CO2/year
+    return (
+        <div
+            className="rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-center gap-8 overflow-hidden relative"
+            style={{
+                background: "linear-gradient(135deg, #13ec5b 0%, #0fa340 100%)",
+                boxShadow: "0 20px 40px -12px rgba(19, 236, 91, 0.3)"
+            }}
+        >
+            <div className="relative z-10 text-center md:text-left flex-1">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/10 text-black/60 text-[10px] font-black uppercase tracking-widest mb-4">
+                    Sustainability Impact
+                </div>
+                <h2 className="text-3xl font-black text-black mb-2">Environment Hero</h2>
+                <p className="text-black/70 font-medium max-w-sm">
+                    By choosing to share your rides, you've saved <strong>{co2.toFixed(1)} kg</strong> of CO2 emissions.
+                    That's the equivalent of planting <strong>{trees} trees</strong> this year!
+                </p>
+            </div>
+
+            <div className="relative z-10 shrink-0 flex items-center justify-center">
+                <div className="w-32 h-32 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+                    <Star size={64} fill="white" className="text-white drop-shadow-xl" />
+                </div>
+            </div>
+
+            {/* Decorative circles */}
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-black/10 rounded-full blur-3xl"></div>
         </div>
     );
 }
