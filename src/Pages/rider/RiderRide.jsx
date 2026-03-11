@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 import {
@@ -26,6 +26,23 @@ import { useProfile } from '../../hooks/useProfile';
 import Navbar from '../../components/layout/Navbar';
 import { cancelRide } from '../../lib/api';
 
+const normaliseBookingStatus = (status) => {
+    const value = String(status || "").toLowerCase();
+    if (value === "pending") return "REQUESTED";
+    return value ? value.toUpperCase() : "";
+};
+
+const getEffectiveRideStatus = (booking) => {
+    const bookingStatus = String(booking?.status || "").toLowerCase();
+    const rideStatus = String(booking?.ride?.status || "").toLowerCase();
+
+    if (bookingStatus === "cancelled" || rideStatus === "cancelled") return "CANCELLED";
+    if (bookingStatus === "completed" || rideStatus === "completed") return "COMPLETED";
+    if (bookingStatus === "confirmed") return "CONFIRMED";
+    if (bookingStatus === "requested" || bookingStatus === "pending") return "REQUESTED";
+    return bookingStatus ? bookingStatus.toUpperCase() : "REQUESTED";
+};
+
 const RiderRides = () => {
     const navigate = useNavigate();
     const { user } = useUser();
@@ -34,6 +51,13 @@ const RiderRides = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [leavingRideId, setLeavingRideId] = useState(null);
+
+    useEffect(() => {
+        const normalised = normaliseBookingStatus(statusFilter);
+        if ((normalised === "COMPLETED" || normalised === "CANCELLED") && activeTab !== "past") {
+            setActiveTab("past");
+        }
+    }, [activeTab, statusFilter]);
 
     const { upcomingRides, pastRides } = useMemo(() => {
         const allRides = data?.bookings || [];
@@ -44,7 +68,7 @@ const RiderRides = () => {
         allRides.forEach((ride) => {
             const depTime = ride.ride?.schedule?.departureTime || ride.departureDate;
             const dep = depTime ? new Date(depTime) : null;
-            const status = ride.status?.toUpperCase();
+            const status = getEffectiveRideStatus(ride);
 
             if (status === 'CANCELLED' || status === 'COMPLETED' || (dep && dep < now)) {
                 past.push(ride);
@@ -76,7 +100,9 @@ const RiderRides = () => {
             const matchSearch = !searchQuery ||
                 (ride.pickupLocation || ride.source || ride.ride?.route?.start?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (ride.dropoffLocation || ride.destination || ride.ride?.route?.end?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
-            const matchStatus = statusFilter === 'all' || ride.status?.toUpperCase() === statusFilter.toUpperCase();
+            const selectedStatus = normaliseBookingStatus(statusFilter);
+            const rideStatus = getEffectiveRideStatus(ride);
+            const matchStatus = statusFilter === 'all' || rideStatus === selectedStatus;
             return matchSearch && matchStatus;
         });
     }, [activeTab, upcomingRides, pastRides, searchQuery, statusFilter]);
@@ -129,7 +155,7 @@ const RiderRides = () => {
             0,
         );
     const canLeaveBooking = (booking) => {
-        const status = String(booking?.status || "").toUpperCase();
+        const status = getEffectiveRideStatus(booking);
         if (status === "CANCELLED" || status === "COMPLETED") return false;
         const departure = getDeparture(booking);
         if (!departure) return true;
@@ -317,11 +343,13 @@ const RiderRides = () => {
                                 )}
                             </div>
                         ) : (
-                            filteredRides.map((ride, index) => (
+                            filteredRides.map((ride, index) => {
+                                const effectiveStatus = getEffectiveRideStatus(ride);
+                                return (
                                 <div
                                     key={ride.id || ride.bookingId || index}
                                     onClick={() => openRideDetails(ride)}
-                                    className={`bg-white rounded-2xl border border-slate-100 p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer ${ride.status?.toUpperCase() === 'CANCELLED' ? 'opacity-60' : ''}`}
+                                    className={`bg-white rounded-2xl border border-slate-100 p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer ${effectiveStatus === 'CANCELLED' ? 'opacity-60' : ''}`}
                                 >
                                     <div className="flex flex-col md:flex-row items-center gap-6">
                                         <div className="flex flex-col items-center">
@@ -337,7 +365,7 @@ const RiderRides = () => {
                                         <div className="hidden md:flex flex-col items-center flex-1 max-w-[150px] relative px-4">
                                             <div className="w-full h-[2px] bg-slate-100 relative">
                                                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2">
-                                                    {getStatusIcon(ride.status)}
+                                                    {getStatusIcon(effectiveStatus)}
                                                 </div>
                                             </div>
                                         </div>
@@ -352,8 +380,8 @@ const RiderRides = () => {
                                             <span className="text-xl font-black text-slate-900">₹{getFare(ride).toFixed(2)}</span>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${getStatusStyle(ride.status)} uppercase`}>
-                                                {ride.status}
+                                            <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${getStatusStyle(effectiveStatus)} uppercase`}>
+                                                {effectiveStatus}
                                             </div>
                                             <div className="flex gap-2">
                                                 <button
@@ -366,7 +394,7 @@ const RiderRides = () => {
                                                 >
                                                     <Info className="w-4 h-4" />
                                                 </button>
-                                                {ride.status?.toUpperCase() === 'COMPLETED' ? (
+                                                {effectiveStatus === 'COMPLETED' ? (
                                                     <button className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
                                                         <FileText className="w-4 h-4" />
                                                     </button>
@@ -389,7 +417,8 @@ const RiderRides = () => {
                                         </div>
                                     </div>
                                 </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 </div>
@@ -408,7 +437,7 @@ const RiderRides = () => {
                                 <span className="text-slate-400 text-sm font-medium">Total Trips</span>
                                 <div className="flex items-baseline gap-2 mt-1">
                                     <h2 className="text-4xl font-black">{stats.completed + stats.cancelled}</h2>
-                                    <span className="text-emerald-400 text-xs font-bold">+{stats.completed} confirmed</span>
+                                    <span className="text-emerald-400 text-xs font-bold">+{stats.completed} completed</span>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
