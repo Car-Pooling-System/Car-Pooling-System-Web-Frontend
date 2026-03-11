@@ -382,8 +382,15 @@ function VehicleCard({ vehicle }) {
 function BookingCard({ booking }) {
     const ride = booking.ride;
     const dep = ride?.schedule?.departureTime ? new Date(ride.schedule.departureTime) : null;
-    const status = booking.status;
-    const isConfirmed = status === "confirmed";
+    const bookingStatus = String(booking?.status || "").toLowerCase();
+    const rideStatus = String(ride?.status || "").toLowerCase();
+    const status =
+        bookingStatus === "cancelled" || rideStatus === "cancelled"
+            ? "cancelled"
+            : bookingStatus === "completed" || rideStatus === "completed"
+                ? "completed"
+                : bookingStatus || "requested";
+    const isPositive = status === "confirmed" || status === "completed";
 
     return (
         <div
@@ -393,7 +400,7 @@ function BookingCard({ booking }) {
             {/* Status dot */}
             <div
                 className="w-2.5 h-2.5 rounded-full shrink-0 mt-1 sm:mt-0"
-                style={{ backgroundColor: isConfirmed ? "var(--color-primary)" : "var(--color-danger)" }}
+                style={{ backgroundColor: isPositive ? "var(--color-primary)" : "var(--color-danger)" }}
             />
 
             <div className="flex-1 min-w-0">
@@ -432,8 +439,8 @@ function BookingCard({ booking }) {
                 <span
                     className="text-xs font-bold px-2 py-0.5 rounded-full capitalize"
                     style={{
-                        backgroundColor: isConfirmed ? "rgba(19,236,91,0.15)" : "rgba(231,42,8,0.10)",
-                        color: isConfirmed ? "var(--color-primary-dark)" : "var(--color-danger)",
+                        backgroundColor: isPositive ? "rgba(19,236,91,0.15)" : "rgba(231,42,8,0.10)",
+                        color: isPositive ? "var(--color-primary-dark)" : "var(--color-danger)",
                     }}
                 >
                     {status}
