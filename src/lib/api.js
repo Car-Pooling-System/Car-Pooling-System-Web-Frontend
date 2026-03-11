@@ -61,6 +61,11 @@ export const searchRides = (params) => {
     return get(`/api/rides/search?${qs}`);
 };
 
+export const getNearbyRides = (params) => {
+    const qs = new URLSearchParams(params).toString();
+    return get(`/api/rides/nearby?${qs}`);
+};
+
 export const getRideDetails = (rideId, params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return get(`/api/rides/${rideId}${qs ? `?${qs}` : ""}`);
