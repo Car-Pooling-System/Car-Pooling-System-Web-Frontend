@@ -16,10 +16,11 @@ import {
     X,
 } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
-import { bookRide, searchRides } from "../lib/api";
+import { bookRide, getNearbyRides, searchRides } from "../lib/api";
 
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
 const MAP_CONTAINER_STYLE = { width: "100%", height: "100%" };
+const RADIUS_OPTIONS = [25, 50, 100, 200];
 
 const BASE_SEAT_OPTIONS = [{ type: "any", label: "Any Seat" }];
 
@@ -83,11 +84,16 @@ export default function SearchRidesPage() {
 
     const pickupNameFromQuery = params.get("pickupName") || "";
     const dropNameFromQuery = params.get("dropName") || "";
+    const nearbyLatFromQuery = toNumber(params.get("nearbyLat"));
+    const nearbyLngFromQuery = toNumber(params.get("nearbyLng"));
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [rides, setRides] = useState([]);
     const [selectedRideId, setSelectedRideId] = useState("");
+    const [nearbyRadius, setNearbyRadius] = useState(50);
+    const [nearbyCenter, setNearbyCenter] = useState(null);
+    const [locationDenied, setLocationDenied] = useState(false);
 
     const [includeMe, setIncludeMe] = useState(true);
     const [seatPreference, setSeatPreference] = useState("any");
@@ -114,6 +120,8 @@ export default function SearchRidesPage() {
         };
     }, [date, dropLat, dropLng, minSeats, pickupLat, pickupLng]);
 
+    const hasRouteSearch = Boolean(searchPayload);
+
     const selectedRide = useMemo(
         () => rides.find((ride) => String(ride?._id) === String(selectedRideId)) || rides[0] || null,
         [rides, selectedRideId],
@@ -129,10 +137,78 @@ export default function SearchRidesPage() {
     useEffect(() => {
         let cancelled = false;
 
-        async function loadRides() {
-            if (!searchPayload) {
-                setError("Pickup and drop coordinates are missing.");
+        const loadNearbyRides = async (origin) => {
+            if (!origin) {
+                setError("Location is required to find nearby rides.");
                 setLoading(false);
+                return;
+            }
+
+            try {
+                setLoading(true);
+                setError("");
+                const response = await getNearbyRides({
+                    lat: origin.lat,
+                    lng: origin.lng,
+                    radiusKm: nearbyRadius,
+                    limit: 30,
+                });
+                if (cancelled) return;
+
+                const now = Date.now();
+                const list = (Array.isArray(response) ? response : []).filter((ride) => {
+                    const departure = new Date(ride?.schedule?.departureTime || 0).getTime();
+                    return Number.isFinite(departure) && departure >= now;
+                });
+                setRides(list);
+                setSelectedRideId(list[0]?._id ? String(list[0]._id) : "");
+            } catch (err) {
+                if (cancelled) return;
+                setError(err?.message || "Failed to load nearby rides.");
+                setRides([]);
+                setSelectedRideId("");
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
+        async function loadRides() {
+            if (!hasRouteSearch) {
+                if (nearbyCenter) {
+                    await loadNearbyRides(nearbyCenter);
+                    return;
+                }
+
+                if (nearbyLatFromQuery != null && nearbyLngFromQuery != null) {
+                    const origin = { lat: nearbyLatFromQuery, lng: nearbyLngFromQuery };
+                    setNearbyCenter(origin);
+                    await loadNearbyRides(origin);
+                    return;
+                }
+
+                if (!navigator.geolocation) {
+                    setLocationDenied(true);
+                    setError("Geolocation is not supported in this browser. Please search by route from home.");
+                    setLoading(false);
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    async ({ coords }) => {
+                        if (cancelled) return;
+                        const origin = { lat: coords.latitude, lng: coords.longitude };
+                        setNearbyCenter(origin);
+                        setLocationDenied(false);
+                        await loadNearbyRides(origin);
+                    },
+                    () => {
+                        if (cancelled) return;
+                        setLocationDenied(true);
+                        setError("Location access denied. Enable location permission or search by route from home.");
+                        setLoading(false);
+                    },
+                    { enableHighAccuracy: false, maximumAge: 120000, timeout: 12000 },
+                );
                 return;
             }
 
@@ -157,7 +233,7 @@ export default function SearchRidesPage() {
         return () => {
             cancelled = true;
         };
-    }, [searchPayload]);
+    }, [hasRouteSearch, nearbyCenter, nearbyLatFromQuery, nearbyLngFromQuery, nearbyRadius, searchPayload]);
 
     useEffect(() => {
         if (!mapsLoaded || pickupLat == null || pickupLng == null || dropLat == null || dropLng == null || !window.google) {
@@ -195,7 +271,11 @@ export default function SearchRidesPage() {
     };
 
     const handleRequestRide = async () => {
-        if (!selectedRide?._id || !user?.id || !searchPayload) return;
+        if (!selectedRide?._id || !user?.id) return;
+        if (!searchPayload) {
+            setRequestError("Select pickup and destination from home to request this ride.");
+            return;
+        }
 
         if (seatsSelected <= 0) {
             setRequestError("Select at least one passenger.");
@@ -282,26 +362,78 @@ export default function SearchRidesPage() {
                         <div>
                             <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">Ride Match</p>
                             <h1 className="text-3xl font-black text-slate-900">Available Rides</h1>
-                            <p className="text-sm text-slate-500">{rides.length} options found</p>
+                            <p className="text-sm text-slate-500">
+                                {hasRouteSearch
+                                    ? `${rides.length} option${rides.length === 1 ? "" : "s"} found`
+                                    : `${rides.length} driver${rides.length === 1 ? "" : "s"} found nearby`}
+                            </p>
                         </div>
                         <div className="flex flex-wrap gap-2 text-xs font-bold">
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">Live Routes</span>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
+                                {hasRouteSearch ? "Route Search" : `Within ${nearbyRadius} km`}
+                            </span>
                             <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-cyan-700">Instant Request</span>
                             <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700">Verified Drivers</span>
                         </div>
                     </div>
+
+                    {!hasRouteSearch ? (
+                        <div className="mt-4">
+                            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 mb-2">
+                                Distance Filter
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {RADIUS_OPTIONS.map((km) => (
+                                    <button
+                                        key={km}
+                                        type="button"
+                                        onClick={() => setNearbyRadius(km)}
+                                        className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                                            nearbyRadius === km
+                                                ? "border-emerald-500 bg-emerald-500 text-white"
+                                                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                                        }`}
+                                    >
+                                        {km} km
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ) : null}
                 </div>
 
                 {error ? (
                     <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
                         {error}
+                        {!hasRouteSearch ? (
+                            <div className="mt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => navigate("/")}
+                                    className="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100"
+                                >
+                                    Go to Home Search
+                                </button>
+                            </div>
+                        ) : null}
                     </div>
                 ) : null}
 
                 {!error && rides.length === 0 ? (
                     <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                        <p className="text-lg font-bold text-slate-900">No rides found for this route</p>
-                        <p className="mt-2 text-sm text-slate-500">Try changing pickup, drop, date, or passenger count.</p>
+                        <p className="text-lg font-bold text-slate-900">
+                            {hasRouteSearch ? "No rides found for this route" : `No rides within ${nearbyRadius} km`}
+                        </p>
+                        <p className="mt-2 text-sm text-slate-500">
+                            {hasRouteSearch
+                                ? "Try changing pickup, drop, date, or passenger count."
+                                : "Try increasing the radius or search a specific route from home."}
+                        </p>
+                        {!hasRouteSearch && locationDenied ? (
+                            <p className="mt-2 text-xs font-semibold text-rose-600">
+                                Location access is required for nearby discovery.
+                            </p>
+                        ) : null}
                     </div>
                 ) : null}
 
@@ -346,7 +478,11 @@ export default function SearchRidesPage() {
                                                 </div>
                                                 <div className="text-right shrink-0">
                                                     <p className="text-4xl leading-none font-black text-slate-900">Rs {Number(ride?.estimate?.fare || 0).toFixed(0)}</p>
-                                                    <p className="mt-1 text-xs font-semibold text-slate-500">{Number(ride?.estimate?.distanceKm || 0).toFixed(1)} km</p>
+                                                    <p className="mt-1 text-xs font-semibold text-slate-500">
+                                                        {hasRouteSearch
+                                                            ? `${Number(ride?.estimate?.distanceKm || 0).toFixed(1)} km`
+                                                            : `${Number(ride?.estimate?.userToStartKm || 0).toFixed(1)} km away`}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
@@ -376,129 +512,148 @@ export default function SearchRidesPage() {
                             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                                 <div className="flex items-center justify-between gap-3">
                                     <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">Booking Details</h2>
-                                    <p className="text-sm font-bold text-slate-600">{seatsSelected} seat(s) selected</p>
+                                    <p className="text-sm font-bold text-slate-600">
+                                        {hasRouteSearch ? `${seatsSelected} seat(s) selected` : "Route required"}
+                                    </p>
                                 </div>
 
-                                <label className="mt-4 flex items-center gap-2 text-xl text-slate-800 font-semibold">
-                                    <input
-                                        type="checkbox"
-                                        checked={includeMe}
-                                        onChange={(e) => setIncludeMe(e.target.checked)}
-                                        className="h-4 w-4 accent-emerald-500"
-                                    />
-                                    Include me in this booking
-                                </label>
-
-                                <div className="mt-4">
-                                    <label className="text-sm font-black uppercase tracking-wide text-slate-500">My Seat Preference</label>
-                                    <select
-                                        value={seatPreference}
-                                        onChange={(e) => setSeatPreference(e.target.value)}
-                                        className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-xl font-medium text-slate-800 focus:border-emerald-400 focus:outline-none"
-                                    >
-                                        {seatOptions.map((option) => (
-                                            <option key={option.type} value={option.type}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="mt-5 flex items-center justify-between gap-3">
-                                    <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Additional Passengers</h3>
-                                    <button
-                                        type="button"
-                                        onClick={addPassenger}
-                                        className="inline-flex items-center gap-1 text-sm font-black text-emerald-700 hover:text-emerald-800"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        Add Passenger
-                                    </button>
-                                </div>
-
-                                {additionalPassengers.length === 0 ? (
-                                    <p className="mt-2 text-sm text-slate-500">Add passengers if you are booking for someone else.</p>
+                                {!hasRouteSearch ? (
+                                    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                                        <p className="text-sm font-semibold text-amber-800">
+                                            You can browse nearby rides now. To request a ride, search with pickup and destination from the home page.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate("/#hero")}
+                                            className="mt-3 rounded-xl border border-amber-300 bg-white px-3 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100"
+                                        >
+                                            Open Route Search
+                                        </button>
+                                    </div>
                                 ) : (
-                                    <div className="mt-3 space-y-3">
-                                        {additionalPassengers.map((passenger, index) => (
-                                            <div key={`passenger-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                                                <div className="flex items-center justify-between">
-                                                    <p className="text-sm font-bold text-slate-700">Passenger {index + 1}</p>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removePassenger(index)}
-                                                        className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-700"
-                                                    >
-                                                        <X className="w-3 h-3" />
-                                                        Remove
-                                                    </button>
-                                                </div>
-                                                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                    <input
-                                                        value={passenger.name}
-                                                        onChange={(e) => updatePassenger(index, "name", e.target.value)}
-                                                        placeholder="Name"
-                                                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
-                                                    />
-                                                    <input
-                                                        value={passenger.email}
-                                                        onChange={(e) => updatePassenger(index, "email", e.target.value)}
-                                                        placeholder="Email"
-                                                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
-                                                    />
-                                                    <input
-                                                        value={passenger.age}
-                                                        onChange={(e) => updatePassenger(index, "age", e.target.value)}
-                                                        placeholder="Age (optional)"
-                                                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
-                                                    />
-                                                    <input
-                                                        value={passenger.sex}
-                                                        onChange={(e) => updatePassenger(index, "sex", e.target.value)}
-                                                        placeholder="Sex (optional)"
-                                                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
-                                                    />
-                                                    <select
-                                                        value={passenger.seatPreference}
-                                                        onChange={(e) => updatePassenger(index, "seatPreference", e.target.value)}
-                                                        className="md:col-span-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
-                                                    >
-                                                        {seatOptions.map((option) => (
-                                                            <option key={`${index}-${option.type}`} value={option.type}>
-                                                                {option.label}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
+                                    <>
+                                        <label className="mt-4 flex items-center gap-2 text-xl text-slate-800 font-semibold">
+                                            <input
+                                                type="checkbox"
+                                                checked={includeMe}
+                                                onChange={(e) => setIncludeMe(e.target.checked)}
+                                                className="h-4 w-4 accent-emerald-500"
+                                            />
+                                            Include me in this booking
+                                        </label>
+
+                                        <div className="mt-4">
+                                            <label className="text-sm font-black uppercase tracking-wide text-slate-500">My Seat Preference</label>
+                                            <select
+                                                value={seatPreference}
+                                                onChange={(e) => setSeatPreference(e.target.value)}
+                                                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-xl font-medium text-slate-800 focus:border-emerald-400 focus:outline-none"
+                                            >
+                                                {seatOptions.map((option) => (
+                                                    <option key={option.type} value={option.type}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="mt-5 flex items-center justify-between gap-3">
+                                            <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Additional Passengers</h3>
+                                            <button
+                                                type="button"
+                                                onClick={addPassenger}
+                                                className="inline-flex items-center gap-1 text-sm font-black text-emerald-700 hover:text-emerald-800"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                Add Passenger
+                                            </button>
+                                        </div>
+
+                                        {additionalPassengers.length === 0 ? (
+                                            <p className="mt-2 text-sm text-slate-500">Add passengers if you are booking for someone else.</p>
+                                        ) : (
+                                            <div className="mt-3 space-y-3">
+                                                {additionalPassengers.map((passenger, index) => (
+                                                    <div key={`passenger-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-sm font-bold text-slate-700">Passenger {index + 1}</p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removePassenger(index)}
+                                                                className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-700"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                                Remove
+                                                            </button>
+                                                        </div>
+                                                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                            <input
+                                                                value={passenger.name}
+                                                                onChange={(e) => updatePassenger(index, "name", e.target.value)}
+                                                                placeholder="Name"
+                                                                className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
+                                                            />
+                                                            <input
+                                                                value={passenger.email}
+                                                                onChange={(e) => updatePassenger(index, "email", e.target.value)}
+                                                                placeholder="Email"
+                                                                className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
+                                                            />
+                                                            <input
+                                                                value={passenger.age}
+                                                                onChange={(e) => updatePassenger(index, "age", e.target.value)}
+                                                                placeholder="Age (optional)"
+                                                                className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
+                                                            />
+                                                            <input
+                                                                value={passenger.sex}
+                                                                onChange={(e) => updatePassenger(index, "sex", e.target.value)}
+                                                                placeholder="Sex (optional)"
+                                                                className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
+                                                            />
+                                                            <select
+                                                                value={passenger.seatPreference}
+                                                                onChange={(e) => updatePassenger(index, "seatPreference", e.target.value)}
+                                                                className="md:col-span-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
+                                                            >
+                                                                {seatOptions.map((option) => (
+                                                                    <option key={`${index}-${option.type}`} value={option.type}>
+                                                                        {option.label}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))}
-                                    </div>
+                                        )}
+
+                                        <p className="mt-4 text-sm font-semibold text-slate-500">
+                                            Seats available: <span className="font-black text-slate-700">{selectedRide?.seatsAvailable ?? 0}</span>
+                                        </p>
+
+                                        {requestError ? (
+                                            <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+                                                {requestError}
+                                            </div>
+                                        ) : null}
+                                        {requestMessage ? (
+                                            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 flex items-center gap-2">
+                                                <CheckCircle2 className="w-4 h-4" />
+                                                {requestMessage}
+                                            </div>
+                                        ) : null}
+
+                                        <button
+                                            type="button"
+                                            disabled={requesting || seatsSelected <= 0}
+                                            onClick={handleRequestRide}
+                                            className="mt-4 w-full rounded-2xl bg-emerald-500 px-4 py-3.5 text-base font-black text-white shadow-[0_10px_25px_-12px_rgba(16,185,129,0.9)] transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                                        >
+                                            {requesting ? "Requesting..." : `Request Ride (${seatsSelected} seat${seatsSelected > 1 ? "s" : ""})`}
+                                        </button>
+                                    </>
                                 )}
-
-                                <p className="mt-4 text-sm font-semibold text-slate-500">
-                                    Seats available: <span className="font-black text-slate-700">{selectedRide?.seatsAvailable ?? 0}</span>
-                                </p>
-
-                                {requestError ? (
-                                    <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
-                                        {requestError}
-                                    </div>
-                                ) : null}
-                                {requestMessage ? (
-                                    <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 flex items-center gap-2">
-                                        <CheckCircle2 className="w-4 h-4" />
-                                        {requestMessage}
-                                    </div>
-                                ) : null}
-
-                                <button
-                                    type="button"
-                                    disabled={requesting || seatsSelected <= 0}
-                                    onClick={handleRequestRide}
-                                    className="mt-4 w-full rounded-2xl bg-emerald-500 px-4 py-3.5 text-base font-black text-white shadow-[0_10px_25px_-12px_rgba(16,185,129,0.9)] transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-300"
-                                >
-                                    {requesting ? "Requesting..." : `Request Ride (${seatsSelected} seat${seatsSelected > 1 ? "s" : ""})`}
-                                </button>
                             </div>
                         </section>
 
@@ -511,6 +666,8 @@ export default function SearchRidesPage() {
                                             center={
                                                 pickupLat != null && pickupLng != null
                                                     ? { lat: pickupLat, lng: pickupLng }
+                                                    : nearbyCenter
+                                                        ? { lat: nearbyCenter.lat, lng: nearbyCenter.lng }
                                                     : DEFAULT_CENTER
                                             }
                                             zoom={6}
@@ -531,19 +688,25 @@ export default function SearchRidesPage() {
                                 <div className="m-4 rounded-2xl border border-slate-200 bg-white/90 p-4">
                                     <p className="text-base font-black text-slate-900 flex items-center gap-2">
                                         <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-                                        Your Route Preview
+                                        {hasRouteSearch ? "Your Route Preview" : "Nearby Ride Preview"}
                                     </p>
                                     <p className="mt-1 text-sm text-slate-600">
-                                        Estimated journey based on your selected pickup and drop points.
+                                        {hasRouteSearch
+                                            ? "Estimated journey based on your selected pickup and drop points."
+                                            : "Showing rides around your current location or selected nearby point."}
                                     </p>
                                     <div className="mt-3 grid grid-cols-1 gap-2 text-sm">
                                         <p className="font-semibold text-slate-700 flex items-start gap-2">
                                             <MapPin className="w-4 h-4 mt-0.5 text-emerald-600" />
-                                            {pickupNameFromQuery || selectedRide?.route?.start?.name || "Pickup point"}
+                                            {hasRouteSearch
+                                                ? (pickupNameFromQuery || selectedRide?.route?.start?.name || "Pickup point")
+                                                : (selectedRide?.route?.start?.name || "Pickup point")}
                                         </p>
                                         <p className="font-semibold text-slate-700 flex items-start gap-2">
                                             <MapPin className="w-4 h-4 mt-0.5 text-rose-500" />
-                                            {dropNameFromQuery || selectedRide?.route?.end?.name || "Drop point"}
+                                            {hasRouteSearch
+                                                ? (dropNameFromQuery || selectedRide?.route?.end?.name || "Drop point")
+                                                : (selectedRide?.route?.end?.name || "Destination")}
                                         </p>
                                     </div>
                                 </div>
@@ -555,4 +718,3 @@ export default function SearchRidesPage() {
         </div>
     );
 }
-
