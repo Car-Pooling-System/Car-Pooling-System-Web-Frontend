@@ -1,20 +1,20 @@
-import { Route, RefreshCw, MessageCircle, ShieldCheck } from "lucide-react";
+import { Route, MessageCircle, Leaf, ShieldCheck } from "lucide-react";
 
 const FEATURES = [
     {
         icon: <Route size={22} />,
-        title: "Smart Route AI",
-        desc: "Our neural engine analyzes millions of data points to find your fastest path.",
-    },
-    {
-        icon: <RefreshCw size={22} />,
-        title: "Live Tracking",
-        desc: "Share your journey in real-time with family and friends for ultimate safety.",
+        title: "Route Optimization",
+        desc: "Plan efficient pick-up and drop-off routes to reduce delays and travel time.",
     },
     {
         icon: <MessageCircle size={22} />,
-        title: "AI Assistance",
-        desc: "24/7 personalized travel tips, weather alerts, and local recommendations.",
+        title: "Chat Feature",
+        desc: "Coordinate quickly with riders and drivers using in-app messaging.",
+    },
+    {
+        icon: <Leaf size={22} />,
+        title: "Carbon Footprint",
+        desc: "Promote shared rides to lower emissions and make daily commuting greener.",
     },
     {
         icon: <ShieldCheck size={22} />,
