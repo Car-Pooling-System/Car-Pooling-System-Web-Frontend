@@ -1,12 +1,20 @@
-const ENV_BASE = String(import.meta.env.VITE_BACKEND_URL || "").trim().replace(/\/+$/, "");
+const ENV_VITE_API = String(import.meta.env.VITE_API_URL || "").trim().replace(/\/+$/, "");
+const ENV_BACKEND = String(import.meta.env.VITE_BACKEND_URL || "").trim().replace(/\/+$/, "");
+
+if (!ENV_VITE_API && !ENV_BACKEND) {
+    console.error("❌ ERROR: VITE_API_URL is NOT defined! The app will try to call itself, causing HTML/JSON errors.");
+    console.warn("Please set VITE_API_URL in your Vercel/Deployment environment variables.");
+}
+
 const BASE_CANDIDATES = Array.from(
     new Set(
-        [ENV_BASE, "http://localhost:3000", ""]
+        [ENV_VITE_API, ENV_BACKEND, "http://localhost:3000", ""]
             .map((base) => String(base || "").trim().replace(/\/+$/, ""))
             .filter((base, index, arr) => arr.indexOf(base) === index),
     ),
 );
-let activeBase = BASE_CANDIDATES[0] || "";
+
+let activeBase = BASE_CANDIDATES[0] || (typeof window !== "undefined" ? window.location.origin : "");
 
 function buildUrl(base, path) {
     if (!base) return path;
@@ -15,26 +23,79 @@ function buildUrl(base, path) {
 
 async function request(path, options = {}) {
     const basesToTry = Array.from(new Set([activeBase, ...BASE_CANDIDATES]));
-    let networkError = null;
+    let lastError = null;
 
     for (const base of basesToTry) {
         try {
             const response = await fetch(buildUrl(base, path), options);
-            activeBase = base;
-            return response;
+            if (response.ok || response.status < 500) {
+                activeBase = base;
+                return response;
+            }
+            lastError = new Error(`Server returned ${response.status}`);
         } catch (err) {
-            networkError = err;
+            lastError = err;
         }
     }
 
-    throw networkError || new Error("Failed to fetch");
+    throw lastError || new Error("Failed to fetch from any base");
 }
 
 async function get(path) {
     const res = await request(path);
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    if (!res.ok) {
+        const message = await extractErrorMessage(res);
+        throw new Error(message);
+    }
     return res.json();
 }
+
+async function post(path, body) {
+    const res = await request(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const message = await extractErrorMessage(res);
+        throw new Error(message);
+    }
+    return res.json();
+}
+
+async function put(path, body) {
+    const res = await request(path, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const message = await extractErrorMessage(res);
+        throw new Error(message);
+    }
+    return res.json();
+}
+
+async function del(path) {
+    const res = await request(path, { method: "DELETE" });
+    if (!res.ok) {
+        const message = await extractErrorMessage(res);
+        throw new Error(message);
+    }
+    return res.json();
+}
+
+async function extractErrorMessage(res) {
+    try {
+        const data = await res.json();
+        if (data?.message) return `${res.status}: ${data.message}`;
+    } catch {
+        // Fallback to status text
+    }
+    return `${res.status} ${res.statusText}`;
+}
+
+// ── API Functions ───────────────────────────────────────────
 
 // Driver
 export const getDriverProfile = (userId) => get(`/api/driver-profile/${userId}`);
@@ -122,47 +183,37 @@ export const getRiderRides = async (userId) => {
 export const bookRide = (rideId, bookData) => post(`/api/rides/${rideId}/book`, bookData);
 export const getEmission = (type, distances) => post(`/get-emission`, { type, distances });
 
-async function post(path, body) {
-    const res = await request(path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-        const message = await extractErrorMessage(res);
-        throw new Error(message);
-    }
-    return res.json();
-}
-
-async function put(path, body) {
-    const res = await request(path, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-        const message = await extractErrorMessage(res);
-        throw new Error(message);
-    }
-    return res.json();
-}
-
-async function del(path) {
-    const res = await request(path, { method: "DELETE" });
-    if (!res.ok) {
-        const message = await extractErrorMessage(res);
-        throw new Error(message);
-    }
-    return res.json();
-}
-
-async function extractErrorMessage(res) {
-    try {
-        const data = await res.json();
-        if (data?.message) return `${res.status}: ${data.message}`;
-    } catch {
-        // Ignore JSON parse errors and fallback to status text.
-    }
-    return `${res.status} ${res.statusText}`;
-}
+export default {
+    getDriverProfile,
+    getDriverStats,
+    getDriverRating,
+    getDriverVehicles,
+    getDriverRides,
+    cancelRide,
+    createRide,
+    updateRide,
+    searchRides,
+    getNearbyRides,
+    getRideDetails,
+    getRideChatMessages,
+    sendRideChatMessage,
+    confirmRideRequest,
+    rejectRideRequest,
+    getChatConversations,
+    getChatMessages,
+    createGroupConversation,
+    createDirectConversation,
+    registerDriver,
+    updateDriverProfile,
+    uploadDriverDocs,
+    addDriverVehicle,
+    updateDriverVehicle,
+    deleteDriverVehicle,
+    sendPhoneVerification,
+    verifyPhoneOtp,
+    updatePhoneOnProfile,
+    uploadFile,
+    getRiderRides,
+    bookRide,
+    getEmission
+};
