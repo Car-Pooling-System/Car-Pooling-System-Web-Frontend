@@ -9,6 +9,17 @@ import {
     getRiderRides,
 } from "../lib/api.js";
 
+function getEffectiveBookingStatus(booking) {
+    const bookingStatus = String(booking?.status || "").toLowerCase();
+    const rideStatus = String(booking?.ride?.status || "").toLowerCase();
+
+    if (bookingStatus === "cancelled" || rideStatus === "cancelled") return "cancelled";
+    if (bookingStatus === "completed" || rideStatus === "completed") return "completed";
+    if (bookingStatus === "confirmed") return "confirmed";
+    if (bookingStatus === "requested" || bookingStatus === "pending") return "requested";
+    return bookingStatus || "requested";
+}
+
 /**
  * Fetches all backend profile data for the signed-in user.
  * Automatically picks driver or rider endpoints based on unsafeMetadata.role.
@@ -55,10 +66,15 @@ export function useProfile() {
                     const bookings = Array.isArray(res) ? res : (res.bookings || []);
                     const co2Saved = res.co2Saved || 0;
 
-                    // Compute stats client-side from bookings
-                    const completed = bookings.filter((b) => String(b.status || "").toLowerCase() === "confirmed").length;
-                    const cancelled = bookings.filter((b) => String(b.status || "").toLowerCase() === "cancelled").length;
-                    const totalFare = bookings.reduce((s, b) => s + (b.farePaid ?? 0), 0);
+                    // Compute rider stats using both booking.status and ride.status.
+                    const completed = bookings.filter((b) => getEffectiveBookingStatus(b) === "completed").length;
+                    const cancelled = bookings.filter((b) => getEffectiveBookingStatus(b) === "cancelled").length;
+                    const totalFare = bookings
+                        .filter((b) => {
+                            const status = getEffectiveBookingStatus(b);
+                            return status === "confirmed" || status === "completed";
+                        })
+                        .reduce((sum, b) => sum + Number(b?.farePaid || 0), 0);
 
                     setData({
                         role: "rider",
